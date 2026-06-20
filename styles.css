@@ -639,6 +639,31 @@ button {
   line-height: 1.45;
 }
 
+.record-edit-row {
+  display: grid;
+  grid-template-columns: auto minmax(130px, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.record-edit-row label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.record-category-select {
+  min-height: 38px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: var(--ink);
+}
+
 .badge-grid {
   grid-template-columns: 1fr 1fr;
 }
@@ -722,5 +747,9 @@ button {
     grid-column: 2;
     justify-self: start;
     margin-top: -4px;
+  }
+
+  .record-edit-row {
+    grid-template-columns: 1fr;
   }
 }

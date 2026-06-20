@@ -101,6 +101,8 @@ union all
 select id, '睡前小达人勋章', '睡觉类获得 5 次正向记录。', 'badge-bedtime', 'category_positive_count', 5, '睡觉', 7 from family
 union all
 select id, '情绪管理勋章', '情绪类获得 10 次正向记录。', 'badge-emotion', 'category_positive_count', 10, '情绪', 8 from family
+union all
+select id, '运动健将勋章', '运动类累计获得 20 颗星。', 'badge-sports', 'category_positive_stars', 20, '运动', 9 from family
 on conflict (family_id, name) do update set
   description = excluded.description,
   icon_key = excluded.icon_key,

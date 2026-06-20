@@ -1,7 +1,7 @@
 const config = window.FAMILY_STARS_CONFIG;
 const api = createSupabaseApi(config);
 
-const categories = ["学习", "吃饭", "睡觉", "情绪", "整理", "礼貌", "兄弟互动", "自理能力", "其他"];
+const categories = ["学习", "吃饭", "睡觉", "情绪", "整理", "运动", "礼貌", "兄弟互动", "自理能力", "其他"];
 const praiseReasons = {
   "皮皮": ["主动完成作业", "照顾小满", "整理书桌", "控制情绪", "认真阅读", "遵守约定"],
   "小满": ["自己吃饭", "自己穿鞋", "分享玩具", "好好刷牙", "用语言表达", "帮忙收拾"]
@@ -430,6 +430,12 @@ function renderRecordItem(item) {
       </div>
       <div class="meta">${escapeHtml(item.guardian_name)}记录 · ${escapeHtml(item.category)} · ${formatTime(item.created_at)}</div>
       <p class="reason">${escapeHtml(item.reason)}</p>
+      <div class="record-edit-row">
+        <label for="recordCategory-${escapeAttr(item.id)}">修改类别</label>
+        <select id="recordCategory-${escapeAttr(item.id)}" class="record-category-select" data-record-id="${escapeAttr(item.id)}">
+          ${categories.map((category) => `<option value="${escapeAttr(category)}" ${category === item.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
+        </select>
+      </div>
     </article>
   `;
 }
@@ -780,6 +786,36 @@ function bindRecordEvents() {
     state.filters.type = event.target.value;
     renderApp();
   });
+
+  document.querySelectorAll(".record-category-select").forEach((select) => {
+    select.addEventListener("change", updateRecordCategory);
+  });
+}
+
+async function updateRecordCategory(event) {
+  const select = event.target;
+  const recordId = select.dataset.recordId;
+  const nextCategory = select.value;
+  const record = state.starRecords.find((item) => item.id === recordId);
+
+  if (!record || record.category === nextCategory) return;
+
+  select.disabled = true;
+  const { error } = await api.rpc("update_star_record_category", {
+    p_family_id: state.family.family_id,
+    p_record_id: recordId,
+    p_category: nextCategory
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  await loadAll();
+  renderApp();
+  toast(`已改为${nextCategory}类别`);
 }
 
 function bindRewardEvents() {
