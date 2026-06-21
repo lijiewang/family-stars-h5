@@ -1,6 +1,6 @@
 with family as (
   insert into public.families (name, invite_code, admin_pin)
-  values ('皮皮小满星球探险队', 'PIPI-MANMAN', '2468')
+  values ('一涵一杉星球探险队', 'PIPI-MANMAN', '2468')
   on conflict (invite_code) do update set name = excluded.name
   returning id
 )
@@ -13,9 +13,9 @@ insert into public.children (
   theme_planet,
   sort_order
 )
-select id, '皮皮', '皮皮', 9, 'rocket-captain', 'blue-tech-planet', 1 from family
+select id, '一涵', '一涵', 9, 'rocket-captain', 'blue-tech-planet', 1 from family
 union all
-select id, '小满', '小满', 3, 'little-astronaut', 'yellow-candy-planet', 2 from family
+select id, '一杉', '一杉', 3, 'little-astronaut', 'yellow-candy-planet', 2 from family
 on conflict (family_id, name) do update set
   nickname = excluded.nickname,
   age = excluded.age,

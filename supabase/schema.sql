@@ -97,6 +97,20 @@ create table if not exists public.reward_redemptions (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.star_trades (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references public.families(id) on delete cascade,
+  from_child_id uuid not null references public.children(id) on delete cascade,
+  to_child_id uuid not null references public.children(id) on delete cascade,
+  guardian_id uuid not null references public.guardians(id),
+  stars int not null check (stars > 0 and stars <= 999),
+  item_title text not null check (length(trim(item_title)) > 0),
+  note text,
+  created_by uuid not null,
+  created_at timestamptz not null default now(),
+  check (from_child_id <> to_child_id)
+);
+
 create table if not exists public.badges (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
@@ -148,6 +162,7 @@ create index if not exists idx_family_members_user_id on public.family_members(u
 create index if not exists idx_star_records_family_created on public.star_records(family_id, created_at desc);
 create index if not exists idx_star_records_child_created on public.star_records(child_id, created_at desc);
 create index if not exists idx_reward_redemptions_family_created on public.reward_redemptions(family_id, created_at desc);
+create index if not exists idx_star_trades_family_created on public.star_trades(family_id, created_at desc);
 create index if not exists idx_child_badges_child_id on public.child_badges(child_id);
 
 drop trigger if exists set_families_updated_at on public.families;
@@ -509,6 +524,105 @@ begin
 end;
 $$;
 
+create or replace function public.transfer_stars(
+  p_family_id uuid,
+  p_from_child_id uuid,
+  p_to_child_id uuid,
+  p_guardian_id uuid,
+  p_stars int,
+  p_item_title text,
+  p_note text default null
+)
+returns public.star_trades
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  from_available_stars int;
+  new_trade public.star_trades%rowtype;
+begin
+  if not public.is_family_member(p_family_id) then
+    raise exception '没有访问这个家庭空间的权限';
+  end if;
+
+  if p_from_child_id = p_to_child_id then
+    raise exception '交易双方必须是两个不同的孩子';
+  end if;
+
+  if p_stars <= 0 or p_stars > 999 then
+    raise exception '交易星星请填写 1 到 999';
+  end if;
+
+  if length(trim(coalesce(p_item_title, ''))) = 0 then
+    raise exception '必须填写交换物品';
+  end if;
+
+  if not exists (
+    select 1 from public.guardians
+    where id = p_guardian_id and family_id = p_family_id and is_active = true
+  ) then
+    raise exception '操作人不存在或已停用';
+  end if;
+
+  select available_stars
+  into from_available_stars
+  from public.children
+  where id = p_from_child_id
+    and family_id = p_family_id
+  for update;
+
+  if from_available_stars is null then
+    raise exception '付出星星的孩子不存在';
+  end if;
+
+  if not exists (
+    select 1 from public.children
+    where id = p_to_child_id and family_id = p_family_id
+  ) then
+    raise exception '获得星星的孩子不存在';
+  end if;
+
+  if from_available_stars < p_stars then
+    raise exception '当前星星不足，不能交易';
+  end if;
+
+  update public.children
+  set available_stars = available_stars - p_stars
+  where id = p_from_child_id
+    and family_id = p_family_id;
+
+  update public.children
+  set available_stars = available_stars + p_stars
+  where id = p_to_child_id
+    and family_id = p_family_id;
+
+  insert into public.star_trades (
+    family_id,
+    from_child_id,
+    to_child_id,
+    guardian_id,
+    stars,
+    item_title,
+    note,
+    created_by
+  )
+  values (
+    p_family_id,
+    p_from_child_id,
+    p_to_child_id,
+    p_guardian_id,
+    p_stars,
+    trim(p_item_title),
+    nullif(trim(coalesce(p_note, '')), ''),
+    auth.uid()
+  )
+  returning * into new_trade;
+
+  return new_trade;
+end;
+$$;
+
 create or replace function public.update_star_record_category(
   p_family_id uuid,
   p_record_id uuid,
@@ -584,6 +698,7 @@ alter table public.family_members enable row level security;
 alter table public.star_records enable row level security;
 alter table public.rewards enable row level security;
 alter table public.reward_redemptions enable row level security;
+alter table public.star_trades enable row level security;
 alter table public.badges enable row level security;
 alter table public.child_badges enable row level security;
 alter table public.title_rules enable row level security;
@@ -641,6 +756,11 @@ create policy "members can read reward redemptions"
 on public.reward_redemptions for select
 using (public.is_family_member(family_id));
 
+drop policy if exists "members can read star trades" on public.star_trades;
+create policy "members can read star trades"
+on public.star_trades for select
+using (public.is_family_member(family_id));
+
 drop policy if exists "members can read badges" on public.badges;
 create policy "members can read badges"
 on public.badges for select
@@ -688,11 +808,12 @@ grant insert, update, delete on public.settings to authenticated;
 grant execute on function public.join_family(text, text) to authenticated;
 grant execute on function public.add_star_record(uuid, uuid, uuid, text, int, text, text) to authenticated;
 grant execute on function public.redeem_reward(uuid, uuid, uuid, uuid, text) to authenticated;
+grant execute on function public.transfer_stars(uuid, uuid, uuid, uuid, int, text, text) to authenticated;
 grant execute on function public.update_star_record_category(uuid, uuid, text) to authenticated;
 
 with family as (
   insert into public.families (name, invite_code, admin_pin)
-  values ('皮皮小满星球探险队', 'PIPI-MANMAN', '2468')
+  values ('一涵一杉星球探险队', 'PIPI-MANMAN', '2468')
   on conflict (invite_code) do update set name = excluded.name
   returning id
 )
@@ -705,9 +826,9 @@ insert into public.children (
   theme_planet,
   sort_order
 )
-select id, '皮皮', '皮皮', 9, 'rocket-captain', 'blue-tech-planet', 1 from family
+select id, '一涵', '一涵', 9, 'rocket-captain', 'blue-tech-planet', 1 from family
 union all
-select id, '小满', '小满', 3, 'little-astronaut', 'yellow-candy-planet', 2 from family
+select id, '一杉', '一杉', 3, 'little-astronaut', 'yellow-candy-planet', 2 from family
 on conflict (family_id, name) do update set
   nickname = excluded.nickname,
   age = excluded.age,

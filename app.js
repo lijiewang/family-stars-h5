@@ -3,12 +3,12 @@ const api = createSupabaseApi(config);
 
 const categories = ["学习", "吃饭", "睡觉", "情绪", "整理", "运动", "礼貌", "兄弟互动", "自理能力", "其他"];
 const praiseReasons = {
-  "皮皮": ["主动完成作业", "照顾小满", "整理书桌", "控制情绪", "认真阅读", "遵守约定"],
-  "小满": ["自己吃饭", "自己穿鞋", "分享玩具", "好好刷牙", "用语言表达", "帮忙收拾"]
+  "一涵": ["主动完成作业", "照顾一杉", "整理书桌", "控制情绪", "认真阅读", "遵守约定"],
+  "一杉": ["自己吃饭", "自己穿鞋", "分享玩具", "好好刷牙", "用语言表达", "帮忙收拾"]
 };
 const improvementReasons = {
-  "皮皮": ["没有遵守约定", "情绪爆发", "作业拖延", "没有收拾物品", "对家人不礼貌"],
-  "小满": ["吃饭离开座位", "睡前跑出房间", "哭闹表达", "不愿收玩具", "抢玩具"]
+  "一涵": ["没有遵守约定", "情绪爆发", "作业拖延", "没有收拾物品", "对家人不礼貌"],
+  "一杉": ["吃饭离开座位", "睡前跑出房间", "哭闹表达", "不愿收玩具", "抢玩具"]
 };
 
 let state = {
@@ -23,6 +23,7 @@ let state = {
   childBadges: [],
   starRecords: [],
   redemptions: [],
+  trades: [],
   loading: false,
   error: "",
   form: {
@@ -44,6 +45,13 @@ let state = {
     description: ""
   },
   isCustomExchangeOpen: false,
+  tradeForm: {
+    fromChildId: "",
+    toChildId: "",
+    stars: 10,
+    itemTitle: "",
+    note: ""
+  },
   selectedChildId: "",
   filters: {
     childId: "all",
@@ -91,7 +99,7 @@ function renderEntry() {
     <main class="entry-screen">
       <section class="entry-card">
         <div class="planet-mark"></div>
-        <h1>皮皮小满星球探险队</h1>
+        <h1>一涵一杉星球探险队</h1>
         <p>选择操作人后进入家庭星球</p>
         ${state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : ""}
         <form id="entryForm" class="form-grid">
@@ -172,7 +180,8 @@ async function loadAll() {
     badgesResult,
     childBadgesResult,
     starRecordsResult,
-    redemptionsResult
+    redemptionsResult,
+    tradesResult
   ] = await Promise.all([
     api.select("children", `family_id=eq.${familyId}&select=*&order=sort_order.asc`),
     api.select("guardians", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
@@ -180,7 +189,8 @@ async function loadAll() {
     api.select("badges", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
     api.select("child_badges", `family_id=eq.${familyId}&select=*`),
     api.select("star_records", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`),
-    api.select("reward_redemptions", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`)
+    api.select("reward_redemptions", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`),
+    api.select("star_trades", `family_id=eq.${familyId}&select=*&order=created_at.desc&limit=80`)
   ]);
 
   const error = [
@@ -190,7 +200,8 @@ async function loadAll() {
     badgesResult,
     childBadgesResult,
     starRecordsResult,
-    redemptionsResult
+    redemptionsResult,
+    tradesResult
   ].find((result) => result.error)?.error;
 
   state.loading = false;
@@ -208,10 +219,20 @@ async function loadAll() {
   state.childBadges = childBadgesResult.data || [];
   state.starRecords = starRecordsResult.data || [];
   state.redemptions = redemptionsResult.data || [];
+  state.trades = tradesResult.data || [];
 
   if (!state.form.childId && state.children[0]) {
     state.form.childId = state.children[0].id;
     state.selectedChildId = state.children[0].id;
+  }
+  if (!state.selectedChildId && state.children[0]) {
+    state.selectedChildId = state.children[0].id;
+  }
+  if (!state.tradeForm.fromChildId && state.children[0]) {
+    state.tradeForm.fromChildId = state.children[0].id;
+  }
+  if (!state.tradeForm.toChildId || state.tradeForm.toChildId === state.tradeForm.fromChildId) {
+    state.tradeForm.toChildId = state.children.find((child) => child.id !== state.tradeForm.fromChildId)?.id || "";
   }
 }
 
@@ -224,7 +245,7 @@ function renderApp() {
   app.innerHTML = `
     <div class="app-shell">
       <header class="topbar">
-        <h1>${escapeHtml(state.family.family_name || "皮皮小满星球探险队")}</h1>
+        <h1>${escapeHtml(state.family.family_name || "一涵一杉星球探险队")}</h1>
         <div class="topbar-row">
           <span class="identity-pill">当前：${escapeHtml(state.guardian?.guardian_name || "未选择")}</span>
           <div class="topbar-actions">
@@ -247,6 +268,7 @@ function renderView() {
   if (state.view === "home") return renderHome();
   if (state.view === "stars") return renderStarsForm();
   if (state.view === "records") return renderRecords();
+  if (state.view === "trades") return renderTrades();
   if (state.view === "rewards") return renderRewards();
   if (state.view === "badges") return renderBadges();
   if (state.view === "settings") return renderSettings();
@@ -395,6 +417,7 @@ function renderRecords() {
           <option value="praise" ${state.filters.type === "praise" ? "selected" : ""}>表扬</option>
           <option value="improvement" ${state.filters.type === "improvement" ? "selected" : ""}>需要改进</option>
           <option value="redemption" ${state.filters.type === "redemption" ? "selected" : ""}>奖励兑换</option>
+          <option value="trade" ${state.filters.type === "trade" ? "selected" : ""}>星星交易</option>
         </select>
       </div>
     </div>
@@ -408,6 +431,19 @@ function renderRecords() {
 }
 
 function renderRecordItem(item) {
+  if (item.kind === "trade") {
+    return `
+      <article class="record-item trade-record-item">
+        <div class="record-head">
+          <strong>星星交易</strong>
+          <span class="score">${item.stars} ⭐</span>
+        </div>
+        <div class="meta">${escapeHtml(item.guardian_name)}记录 · ${formatTime(item.created_at)}</div>
+        <p class="reason">${escapeHtml(item.from_child_name)} 用 ${item.stars} 颗星星交换 ${escapeHtml(item.to_child_name)} 的 ${escapeHtml(item.item_title)}${item.note ? `：${escapeHtml(item.note)}` : ""}</p>
+      </article>
+    `;
+  }
+
   if (item.kind === "redemption") {
     return `
       <article class="record-item">
@@ -436,6 +472,74 @@ function renderRecordItem(item) {
           ${categories.map((category) => `<option value="${escapeAttr(category)}" ${category === item.category ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}
         </select>
       </div>
+    </article>
+  `;
+}
+
+function renderTrades() {
+  const fromChild = state.children.find((child) => child.id === state.tradeForm.fromChildId) || state.children[0];
+  const toChildOptions = state.children.filter((child) => child.id !== state.tradeForm.fromChildId);
+  if (!state.tradeForm.toChildId && toChildOptions[0]) {
+    state.tradeForm.toChildId = toChildOptions[0].id;
+  }
+  const recentTrades = state.trades.slice(0, 20);
+
+  return `
+    <section class="section-title">
+      <h2>星星交易</h2>
+      <span>记录线下交换</span>
+    </section>
+    <form id="tradeForm" class="panel form-card form-grid">
+      <div class="field">
+        <label for="tradeFromChild">付出星星</label>
+        <select id="tradeFromChild">
+          ${state.children.map((child) => `<option value="${child.id}" ${child.id === state.tradeForm.fromChildId ? "selected" : ""}>${escapeHtml(child.name)}（${child.available_stars} 星）</option>`).join("")}
+        </select>
+      </div>
+      <div class="field">
+        <label for="tradeToChild">获得星星</label>
+        <select id="tradeToChild">
+          ${toChildOptions.map((child) => `<option value="${child.id}" ${child.id === state.tradeForm.toChildId ? "selected" : ""}>${escapeHtml(child.name)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="trade-flow">
+        <span>${escapeHtml(fromChild?.name || "孩子")} -${Number(state.tradeForm.stars) || 0} ⭐</span>
+        <strong>交换</strong>
+        <span>${escapeHtml(childName(state.tradeForm.toChildId) || "孩子")} +${Number(state.tradeForm.stars) || 0} ⭐</span>
+      </div>
+      <div class="field">
+        <label for="tradeStars">交易星星</label>
+        <input id="tradeStars" inputmode="numeric" type="number" min="1" max="999" value="${escapeAttr(state.tradeForm.stars)}" />
+      </div>
+      <div class="field">
+        <label for="tradeItemTitle">交换物品</label>
+        <input id="tradeItemTitle" maxlength="40" placeholder="例如：两块橡皮" value="${escapeAttr(state.tradeForm.itemTitle)}" />
+      </div>
+      <div class="field">
+        <label for="tradeNote">备注</label>
+        <textarea id="tradeNote" maxlength="120" placeholder="记录线下发生的交换细节">${escapeHtml(state.tradeForm.note)}</textarea>
+      </div>
+      <button class="secondary-btn" type="submit">确认交易</button>
+    </form>
+    <section class="section-title">
+      <h2>最近交易</h2>
+      <span>${recentTrades.length} 条</span>
+    </section>
+    <div class="record-list">
+      ${recentTrades.map(renderTradeItem).join("") || `<div class="panel empty-state">还没有星星交易记录</div>`}
+    </div>
+  `;
+}
+
+function renderTradeItem(item) {
+  return `
+    <article class="record-item trade-record-item">
+      <div class="record-head">
+        <strong>${escapeHtml(childName(item.from_child_id))} → ${escapeHtml(childName(item.to_child_id))}</strong>
+        <span class="score">${item.stars} ⭐</span>
+      </div>
+      <div class="meta">${escapeHtml(guardianName(item.guardian_id))}记录 · ${formatTime(item.created_at)}</div>
+      <p class="reason">${escapeHtml(childName(item.from_child_id))} 用 ${item.stars} 颗星星交换 ${escapeHtml(childName(item.to_child_id))} 的 ${escapeHtml(item.item_title)}${item.note ? `：${escapeHtml(item.note)}` : ""}</p>
     </article>
   `;
 }
@@ -624,6 +728,7 @@ function renderNav() {
     ["home", "⌂", "首页"],
     ["stars", "+", "给星"],
     ["records", "≡", "记录"],
+    ["trades", "⇄", "交易"],
     ["rewards", "★", "奖励"],
     ["badges", "◇", "勋章"]
   ];
@@ -680,8 +785,95 @@ function bindViewEvents() {
 
   bindStarFormEvents();
   bindRecordEvents();
+  bindTradeEvents();
   bindRewardEvents();
   bindSettingsEvents();
+}
+
+function bindTradeEvents() {
+  const form = document.querySelector("#tradeForm");
+  if (!form) return;
+
+  document.querySelector("#tradeFromChild")?.addEventListener("change", (event) => {
+    state.tradeForm.fromChildId = event.target.value;
+    const nextTarget = state.children.find((child) => child.id !== state.tradeForm.fromChildId);
+    state.tradeForm.toChildId = nextTarget?.id || "";
+    renderApp();
+  });
+  document.querySelector("#tradeToChild")?.addEventListener("change", (event) => {
+    state.tradeForm.toChildId = event.target.value;
+    renderApp();
+  });
+  document.querySelector("#tradeStars")?.addEventListener("input", (event) => {
+    state.tradeForm.stars = event.target.value;
+  });
+  document.querySelector("#tradeItemTitle")?.addEventListener("input", (event) => {
+    state.tradeForm.itemTitle = event.target.value;
+  });
+  document.querySelector("#tradeNote")?.addEventListener("input", (event) => {
+    state.tradeForm.note = event.target.value;
+  });
+  form.addEventListener("submit", submitTrade);
+}
+
+async function submitTrade(event) {
+  event.preventDefault();
+  const fromChildId = document.querySelector("#tradeFromChild").value;
+  const toChildId = document.querySelector("#tradeToChild").value;
+  const stars = Number(document.querySelector("#tradeStars").value);
+  const itemTitle = document.querySelector("#tradeItemTitle").value.trim();
+  const note = document.querySelector("#tradeNote").value.trim();
+  const fromChild = state.children.find((child) => child.id === fromChildId);
+
+  state.tradeForm = { fromChildId, toChildId, stars: Number.isFinite(stars) ? stars : "", itemTitle, note };
+
+  if (!fromChildId || !toChildId || fromChildId === toChildId) {
+    toast("请选择两个不同的孩子");
+    return;
+  }
+  if (!Number.isInteger(stars) || stars < 1 || stars > 999) {
+    toast("交易星星请填写 1 到 999");
+    return;
+  }
+  if (!itemTitle) {
+    toast("请填写交换物品");
+    return;
+  }
+  if (fromChild && fromChild.available_stars < stars) {
+    toast(`${fromChild.name} 当前星星不足`);
+    return;
+  }
+
+  const button = event.submitter;
+  button.disabled = true;
+  button.textContent = "交易中...";
+
+  const { error } = await api.rpc("transfer_stars", {
+    p_family_id: state.family.family_id,
+    p_from_child_id: fromChildId,
+    p_to_child_id: toChildId,
+    p_guardian_id: state.guardian.guardian_id,
+    p_stars: stars,
+    p_item_title: itemTitle,
+    p_note: note || null
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  state.tradeForm = {
+    fromChildId,
+    toChildId,
+    stars: 10,
+    itemTitle: "",
+    note: ""
+  };
+  await loadAll();
+  renderApp();
+  toast("星星交易已记录");
 }
 
 function bindStarFormEvents() {
@@ -1098,7 +1290,22 @@ function combinedRecords() {
     child_name: item.children?.name || "孩子",
     guardian_name: item.guardians?.name || "家长"
   }));
-  return [...starItems, ...redemptionItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const tradeItems = state.trades.map((item) => ({
+    ...item,
+    kind: "trade",
+    from_child_name: childName(item.from_child_id),
+    to_child_name: childName(item.to_child_id),
+    guardian_name: guardianName(item.guardian_id)
+  }));
+  return [...starItems, ...redemptionItems, ...tradeItems].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+function childName(childId) {
+  return state.children.find((child) => child.id === childId)?.name || "孩子";
+}
+
+function guardianName(guardianId) {
+  return state.guardians.find((guardian) => guardian.id === guardianId)?.name || "家长";
 }
 
 function formatTime(value) {
@@ -1123,7 +1330,8 @@ function toast(message) {
 function humanError(error) {
   const message = error?.message || String(error);
   if (message.includes("Failed to fetch")) return "连接 Supabase 失败，请检查网络或项目地址。";
-  if (message.includes("function") && message.includes("does not exist")) return "数据库函数不存在，请先运行 supabase/schema.sql。";
+  if (message.includes("star_trades")) return "数据库还没有星星交易表，请先运行 supabase/transfer-stars-and-rename-family.sql。";
+  if (message.includes("function") && message.includes("does not exist")) return "数据库函数不存在，请先运行对应的 Supabase SQL。";
   return message;
 }
 

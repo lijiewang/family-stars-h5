@@ -90,6 +90,18 @@ using (
   )
 );
 
+drop policy if exists "members can read star trades direct" on public.star_trades;
+create policy "members can read star trades direct"
+on public.star_trades for select
+using (
+  exists (
+    select 1
+    from public.family_members fm
+    where fm.family_id = star_trades.family_id
+      and fm.user_id = auth.uid()
+  )
+);
+
 drop policy if exists "members can read badges direct" on public.badges;
 create policy "members can read badges direct"
 on public.badges for select
