@@ -675,6 +675,18 @@ function renderBadges() {
       .filter((item) => item.child_id === selectedChild?.id)
       .map((item) => item.badge_id)
   );
+  const isBadgeEarned = (badge) => {
+    if (earnedIds.has(badge.id)) return true;
+    if (badge.rule_type === "lifetime_stars") {
+      const growthStars = Math.max(
+        Number(selectedChild?.lifetime_stars || 0),
+        Number(selectedChild?.available_stars || 0)
+      );
+      return growthStars >= Number(badge.rule_value || 0);
+    }
+    return false;
+  };
+  const earnedCount = state.badges.filter(isBadgeEarned).length;
 
   return `
     <section class="section-title">
@@ -693,16 +705,19 @@ function renderBadges() {
     </div>
     <section class="section-title">
       <h2>${escapeHtml(selectedChild?.name || "")} 的勋章</h2>
-      <span>${earnedIds.size}/${state.badges.length}</span>
+      <span>${earnedCount}/${state.badges.length}</span>
     </section>
     <div class="badge-grid">
-      ${state.badges.map((badge) => `
-        <article class="badge-item ${earnedIds.has(badge.id) ? "" : "locked"}">
-          <div class="badge-icon">${earnedIds.has(badge.id) ? "★" : "?"}</div>
+      ${state.badges.map((badge) => {
+        const earned = isBadgeEarned(badge);
+        return `
+        <article class="badge-item ${earned ? "" : "locked"}">
+          <div class="badge-icon">${earned ? "★" : "?"}</div>
           <strong>${escapeHtml(badge.name)}</strong>
           <div class="meta">${escapeHtml(badge.description)}</div>
         </article>
-      `).join("") || `<div class="panel empty-state">还没有勋章配置</div>`}
+      `;
+      }).join("") || `<div class="panel empty-state">还没有勋章配置</div>`}
     </div>
   `;
 }
