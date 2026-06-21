@@ -512,9 +512,9 @@ function renderTrades() {
         </select>
       </div>
       <div class="trade-flow">
-        <span>${escapeHtml(fromChild?.name || "孩子")} -${Number(state.tradeForm.stars) || 0} ⭐</span>
+        <span class="trade-flow-from">${escapeHtml(fromChild?.name || "孩子")} -${Number(state.tradeForm.stars) || 0} ⭐</span>
         <strong>交换</strong>
-        <span>${escapeHtml(childName(state.tradeForm.toChildId) || "孩子")} +${Number(state.tradeForm.stars) || 0} ⭐</span>
+        <span class="trade-flow-to">${escapeHtml(childName(state.tradeForm.toChildId) || "孩子")} +${Number(state.tradeForm.stars) || 0} ⭐</span>
       </div>
       <div class="field">
         <label for="tradeStars">交易星星</label>
@@ -830,6 +830,7 @@ function bindTradeEvents() {
   });
   document.querySelector("#tradeStars")?.addEventListener("input", (event) => {
     state.tradeForm.stars = event.target.value;
+    updateTradeFlowPreview();
   });
   document.querySelector("#tradeItemTitle")?.addEventListener("input", (event) => {
     state.tradeForm.itemTitle = event.target.value;
@@ -838,6 +839,20 @@ function bindTradeEvents() {
     state.tradeForm.note = event.target.value;
   });
   form.addEventListener("submit", submitTrade);
+}
+
+function updateTradeFlowPreview() {
+  const stars = Number(state.tradeForm.stars) || 0;
+  const fromChild = state.children.find((child) => child.id === state.tradeForm.fromChildId) || state.children[0];
+  const fromNode = document.querySelector(".trade-flow-from");
+  const toNode = document.querySelector(".trade-flow-to");
+
+  if (fromNode) {
+    fromNode.textContent = `${fromChild?.name || "孩子"} -${stars} ⭐`;
+  }
+  if (toNode) {
+    toNode.textContent = `${childName(state.tradeForm.toChildId) || "孩子"} +${stars} ⭐`;
+  }
 }
 
 async function submitTrade(event) {
