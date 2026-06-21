@@ -189,7 +189,7 @@ async function loadAll() {
     api.select("badges", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
     api.select("child_badges", `family_id=eq.${familyId}&select=*`),
     api.select("star_records", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`),
-    api.select("reward_redemptions", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`),
+    api.select("reward_redemptions", `family_id=eq.${familyId}&select=*,children(name),guardian:guardians!reward_redemptions_guardian_id_fkey(name)&order=created_at.desc&limit=80`),
     api.select("star_trades", `family_id=eq.${familyId}&select=*&order=created_at.desc&limit=80`)
   ]);
 
@@ -1332,7 +1332,7 @@ function combinedRecords() {
     ...item,
     kind: "redemption",
     child_name: item.children?.name || "孩子",
-    guardian_name: item.guardians?.name || "家长"
+    guardian_name: item.guardian?.name || item.guardians?.name || "家长"
   }));
   const tradeItems = state.trades.map((item) => ({
     ...item,
