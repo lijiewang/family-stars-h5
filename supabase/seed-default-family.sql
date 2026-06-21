@@ -86,23 +86,25 @@ insert into public.badges (
   category,
   sort_order
 )
-select id, '星球小队员勋章', '累计获得 10 颗成长星。', 'badge-star-rookie', 'lifetime_stars', 10, null, 1 from family
+select id, '星球小子勋章', '累计获得 1 颗成长星。', 'badge-planet-kid', 'lifetime_stars', 1, null, 1 from family
 union all
-select id, '闪亮探险家勋章', '累计获得 30 颗成长星。', 'badge-explorer', 'lifetime_stars', 30, null, 2 from family
+select id, '星球小队员勋章', '累计获得 10 颗成长星。', 'badge-star-rookie', 'lifetime_stars', 10, null, 2 from family
 union all
-select id, '自律小勇士勋章', '累计获得 60 颗成长星。', 'badge-discipline', 'lifetime_stars', 60, null, 3 from family
+select id, '闪亮探险家勋章', '累计获得 30 颗成长星。', 'badge-explorer', 'lifetime_stars', 30, null, 3 from family
 union all
-select id, '星球队长勋章', '累计获得 100 颗成长星。', 'badge-captain', 'lifetime_stars', 100, null, 4 from family
+select id, '自律小勇士勋章', '累计获得 60 颗成长星。', 'badge-discipline', 'lifetime_stars', 60, null, 4 from family
 union all
-select id, '整理达人勋章', '整理类累计获得 20 颗星。', 'badge-tidy', 'category_positive_stars', 20, '整理', 5 from family
+select id, '星球队长勋章', '累计获得 100 颗成长星。', 'badge-captain', 'lifetime_stars', 100, null, 5 from family
 union all
-select id, '友爱兄弟勋章', '兄弟互动累计获得 20 颗星。', 'badge-brothers', 'category_positive_stars', 20, '兄弟互动', 6 from family
+select id, '整理达人勋章', '整理类累计获得 20 颗星。', 'badge-tidy', 'category_positive_stars', 20, '整理', 6 from family
 union all
-select id, '睡前小达人勋章', '睡觉类获得 5 次正向记录。', 'badge-bedtime', 'category_positive_count', 5, '睡觉', 7 from family
+select id, '友爱兄弟勋章', '兄弟互动累计获得 20 颗星。', 'badge-brothers', 'category_positive_stars', 20, '兄弟互动', 7 from family
 union all
-select id, '情绪管理勋章', '情绪类获得 10 次正向记录。', 'badge-emotion', 'category_positive_count', 10, '情绪', 8 from family
+select id, '睡前小达人勋章', '睡觉类获得 5 次正向记录。', 'badge-bedtime', 'category_positive_count', 5, '睡觉', 8 from family
 union all
-select id, '运动健将勋章', '运动类累计获得 20 颗星。', 'badge-sports', 'category_positive_stars', 20, '运动', 9 from family
+select id, '情绪管理勋章', '情绪类获得 10 次正向记录。', 'badge-emotion', 'category_positive_count', 10, '情绪', 9 from family
+union all
+select id, '运动健将勋章', '运动类累计获得 20 颗星。', 'badge-sports', 'category_positive_stars', 20, '运动', 10 from family
 on conflict (family_id, name) do update set
   description = excluded.description,
   icon_key = excluded.icon_key,
