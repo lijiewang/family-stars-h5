@@ -1,0 +1,44 @@
+name: Run Supabase SQL
+
+on:
+  workflow_dispatch:
+    inputs:
+      sql_file:
+        description: "SQL file to run"
+        required: true
+        type: choice
+        options:
+          - supabase/backfill-earned-badges.sql
+          - supabase/add-redemption-invalidation.sql
+          - supabase/add-planet-kid-badge.sql
+          - supabase/transfer-stars-and-rename-family.sql
+          - supabase/add-sports-and-record-category-edit.sql
+          - supabase/fix-direct-family-rls.sql
+          - supabase/fix-family-member-rls.sql
+
+jobs:
+  run-sql:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Validate SQL file
+        run: |
+          case "${{ inputs.sql_file }}" in
+            supabase/*.sql) ;;
+            *) echo "SQL file must be under supabase/"; exit 1 ;;
+          esac
+          test -f "${{ inputs.sql_file }}"
+
+      - name: Run SQL on Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          test -n "$SUPABASE_DB_URL"
+          psql "$SUPABASE_DB_URL" --set=ON_ERROR_STOP=1 --file="${{ inputs.sql_file }}"

@@ -8,7 +8,15 @@
 - `app.js`
 - `_headers`
 
-## 推荐方式：Netlify Drop
+## 推荐方式：Netlify 自动部署
+
+项目已经配置 `netlify.toml`。把 Netlify 连接到 GitHub 仓库后，每次 `main` 分支更新都会自动生成并发布 `dist`。
+
+详细步骤见：
+
+[automation-deploy.md](./automation-deploy.md)
+
+## 手动方式：Netlify Drop
 
 这是最快的手动部署方式。
 
