@@ -445,14 +445,23 @@ function renderRecordItem(item) {
   }
 
   if (item.kind === "redemption") {
+    const isInvalidated = item.status === "invalidated";
     return `
-      <article class="record-item">
+      <article class="record-item redemption-record-item ${isInvalidated ? "is-invalidated" : ""}">
         <div class="record-head">
           <strong>${escapeHtml(item.child_name)} 兑换奖励</strong>
-          <span class="score negative">-${item.cost_stars} ⭐</span>
+          <span class="score ${isInvalidated ? "positive" : "negative"}">${isInvalidated ? "+" : "-"}${item.cost_stars} ⭐</span>
         </div>
-        <div class="meta">${escapeHtml(item.guardian_name)}确认 · ${formatTime(item.created_at)}</div>
+        <div class="meta">
+          ${escapeHtml(item.guardian_name)}确认 · ${formatTime(item.created_at)}
+          ${isInvalidated ? ` · 已失效${item.invalidated_at ? ` · ${formatTime(item.invalidated_at)}` : ""}` : ""}
+        </div>
         <p class="reason">${escapeHtml(item.reward_name)}${item.note ? `：${escapeHtml(item.note)}` : ""}</p>
+        ${isInvalidated
+          ? `<div class="record-status-pill">已回退 ${item.cost_stars} 颗星星${item.invalidated_note ? ` · ${escapeHtml(item.invalidated_note)}` : ""}</div>`
+          : `<div class="record-action-row">
+              <button class="ghost-btn invalidate-redemption-btn" data-redemption-id="${escapeAttr(item.id)}" data-child-name="${escapeAttr(item.child_name)}" data-cost-stars="${escapeAttr(item.cost_stars)}" data-reward-name="${escapeAttr(item.reward_name)}" type="button">失效并回退星星</button>
+            </div>`}
       </article>
     `;
   }
@@ -982,6 +991,10 @@ function bindRecordEvents() {
   document.querySelectorAll(".record-category-select").forEach((select) => {
     select.addEventListener("change", updateRecordCategory);
   });
+
+  document.querySelectorAll(".invalidate-redemption-btn").forEach((button) => {
+    button.addEventListener("click", invalidateRedemption);
+  });
 }
 
 async function updateRecordCategory(event) {
@@ -1008,6 +1021,37 @@ async function updateRecordCategory(event) {
   await loadAll();
   renderApp();
   toast(`已改为${nextCategory}类别`);
+}
+
+async function invalidateRedemption(event) {
+  const button = event.currentTarget;
+  const redemptionId = button.dataset.redemptionId;
+  const childNameText = button.dataset.childName || "孩子";
+  const costStars = button.dataset.costStars || "0";
+  const rewardName = button.dataset.rewardName || "奖励";
+
+  const ok = window.confirm(`确认将 ${childNameText} 的「${rewardName}」兑换记录设为失效，并回退 ${costStars} 颗星星吗？`);
+  if (!ok) return;
+
+  button.disabled = true;
+  button.textContent = "正在回退...";
+
+  const { error } = await api.rpc("invalidate_reward_redemption", {
+    p_family_id: state.family.family_id,
+    p_redemption_id: redemptionId,
+    p_guardian_id: state.guardian.guardian_id,
+    p_note: "家长手动失效"
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  await loadAll();
+  renderApp();
+  toast(`已回退 ${costStars} 颗星星`);
 }
 
 function bindRewardEvents() {
@@ -1331,6 +1375,7 @@ function humanError(error) {
   const message = error?.message || String(error);
   if (message.includes("Failed to fetch")) return "连接 Supabase 失败，请检查网络或项目地址。";
   if (message.includes("star_trades")) return "数据库还没有星星交易表，请先运行 supabase/transfer-stars-and-rename-family.sql。";
+  if (message.includes("invalidate_reward_redemption") || message.includes("invalidated")) return "数据库还没有兑奖失效功能，请先运行 supabase/add-redemption-invalidation.sql。";
   if (message.includes("function") && message.includes("does not exist")) return "数据库函数不存在，请先运行对应的 Supabase SQL。";
   return message;
 }

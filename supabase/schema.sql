@@ -93,6 +93,10 @@ create table if not exists public.reward_redemptions (
   reward_name text not null,
   cost_stars int not null check (cost_stars > 0),
   note text,
+  status text not null default 'active' check (status in ('active', 'invalidated')),
+  invalidated_at timestamptz,
+  invalidated_by uuid references public.guardians(id),
+  invalidated_note text,
   created_by uuid not null,
   created_at timestamptz not null default now()
 );
@@ -524,6 +528,67 @@ begin
 end;
 $$;
 
+create or replace function public.invalidate_reward_redemption(
+  p_family_id uuid,
+  p_redemption_id uuid,
+  p_guardian_id uuid,
+  p_note text default null
+)
+returns public.reward_redemptions
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_redemption public.reward_redemptions%rowtype;
+  updated_redemption public.reward_redemptions%rowtype;
+begin
+  if not public.is_family_member(p_family_id) then
+    raise exception '没有访问这个家庭空间的权限';
+  end if;
+
+  if not exists (
+    select 1 from public.guardians
+    where id = p_guardian_id and family_id = p_family_id and is_active = true
+  ) then
+    raise exception '操作人不存在或已停用';
+  end if;
+
+  select *
+  into target_redemption
+  from public.reward_redemptions
+  where id = p_redemption_id
+    and family_id = p_family_id
+  for update;
+
+  if target_redemption.id is null then
+    raise exception '兑奖记录不存在';
+  end if;
+
+  if target_redemption.status = 'invalidated' then
+    raise exception '这条兑奖记录已经失效，不能重复撤回';
+  end if;
+
+  update public.children
+  set
+    available_stars = available_stars + target_redemption.cost_stars,
+    spent_stars = greatest(spent_stars - target_redemption.cost_stars, 0)
+  where id = target_redemption.child_id
+    and family_id = p_family_id;
+
+  update public.reward_redemptions
+  set
+    status = 'invalidated',
+    invalidated_at = now(),
+    invalidated_by = p_guardian_id,
+    invalidated_note = nullif(trim(coalesce(p_note, '')), '')
+  where id = target_redemption.id
+  returning * into updated_redemption;
+
+  return updated_redemption;
+end;
+$$;
+
 create or replace function public.transfer_stars(
   p_family_id uuid,
   p_from_child_id uuid,
@@ -808,6 +873,7 @@ grant insert, update, delete on public.settings to authenticated;
 grant execute on function public.join_family(text, text) to authenticated;
 grant execute on function public.add_star_record(uuid, uuid, uuid, text, int, text, text) to authenticated;
 grant execute on function public.redeem_reward(uuid, uuid, uuid, uuid, text) to authenticated;
+grant execute on function public.invalidate_reward_redemption(uuid, uuid, uuid, text) to authenticated;
 grant execute on function public.transfer_stars(uuid, uuid, uuid, uuid, int, text, text) to authenticated;
 grant execute on function public.update_star_record_category(uuid, uuid, text) to authenticated;
 

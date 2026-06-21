@@ -488,6 +488,36 @@ button {
   background: linear-gradient(180deg, #f8fbff, #ffffff);
 }
 
+.redemption-record-item.is-invalidated {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4, #ffffff);
+}
+
+.record-action-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.record-action-row .ghost-btn {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.record-status-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .trade-flow {
   min-height: 62px;
   display: grid;
