@@ -362,7 +362,7 @@ button {
   width: min(100%, 520px);
   transform: translateX(-50%);
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   padding: 7px 6px calc(7px + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.96);
@@ -376,7 +376,7 @@ button {
   border-radius: 10px;
   background: transparent;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   display: grid;
   place-items: center;
   gap: 2px;
@@ -384,7 +384,7 @@ button {
 }
 
 .nav-btn strong {
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -539,6 +539,124 @@ button {
   border-radius: 11px;
   text-align: center;
   font-weight: 800;
+}
+
+.summer-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.summer-summary div {
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.summer-summary strong {
+  display: block;
+  font-size: 18px;
+  color: #1d4ed8;
+}
+
+.summer-summary span {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.summer-group-title {
+  margin-top: 20px;
+}
+
+.summer-task-list,
+.summer-project-list {
+  display: grid;
+  gap: 10px;
+}
+
+.summer-task-card {
+  padding: 13px;
+  background: #f8fafc;
+}
+
+.summer-task-card.is-done {
+  border-color: #86efac;
+  background: linear-gradient(180deg, #f0fdf4, #ffffff);
+}
+
+.summer-task-main {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.summer-check-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  color: #166534;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.summer-check-btn.is-done {
+  border-color: #22c55e;
+  background: #dcfce7;
+}
+
+.summer-task-main strong {
+  display: block;
+  font-size: 16px;
+}
+
+.summer-task-fields {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.summer-task-fields input,
+.summer-project-actions input {
+  min-width: 0;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: white;
+  color: var(--ink);
+}
+
+.summer-project-card {
+  padding: 13px;
+}
+
+.summer-progress {
+  height: 12px;
+  margin: 12px 0;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.summer-progress div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+}
+
+.summer-project-actions {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 8px;
 }
 
 .trade-flow span {
@@ -764,6 +882,18 @@ button {
   margin-bottom: 8px;
 }
 
+.level-pill {
+  display: inline-flex;
+  align-items: center;
+  margin: 6px 0 2px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 .badge-item.locked {
   opacity: 0.48;
   filter: grayscale(0.7);
@@ -818,11 +948,11 @@ button {
   .nav-btn {
     min-height: 50px;
     border-radius: 9px;
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .nav-btn strong {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .child-name h3 {
@@ -840,6 +970,10 @@ button {
   }
 
   .record-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .summer-task-fields {
     grid-template-columns: 1fr;
   }
 }

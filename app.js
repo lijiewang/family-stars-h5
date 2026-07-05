@@ -10,6 +10,31 @@ const improvementReasons = {
   "一涵": ["没有遵守约定", "情绪爆发", "作业拖延", "没有收拾物品", "对家人不礼貌"],
   "一杉": ["吃饭离开座位", "睡前跑出房间", "哭闹表达", "不愿收玩具", "抢玩具"]
 };
+const summerDefaultTasks = [
+  { task_key: "morning_reading", name: "晨读", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 1 },
+  { task_key: "handwriting", name: "练字", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 2 },
+  { task_key: "math_drill", name: "数学口算与应用题", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "题", sort_order: 3 },
+  { task_key: "summer_homework_am", name: "暑假作业上午段", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 4 },
+  { task_key: "summer_homework_pm", name: "暑假作业下午段", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 5 },
+  { task_key: "reading", name: "阅读 1 小时", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 6 },
+  { task_key: "sports_outdoor", name: "运动户外", task_group: "基础任务", category: "运动", reward_stars: 2, metric_type: "分钟", sort_order: 7 },
+  { task_key: "english_checkin", name: "英语打卡", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 8 },
+  { task_key: "housework", name: "家务劳动", task_group: "基础任务", category: "自理能力", reward_stars: 1, metric_type: "次", sort_order: 9 },
+  { task_key: "night_review", name: "睡前复盘", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "篇", sort_order: 10 },
+  { task_key: "screen_control", name: "电子产品不超过 30 分钟", task_group: "基础任务", category: "自理能力", reward_stars: 1, metric_type: "达成", sort_order: 11 },
+  { task_key: "space_reading", name: "航天主题阅读", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 12 },
+  { task_key: "space_project", name: "航天实践作品", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "步骤", sort_order: 13 },
+  { task_key: "essay_project", name: "暑期主题征文推进", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "步骤", sort_order: 14 },
+  { task_key: "young_pioneer", name: "少先队实践推进", task_group: "暑假专项", category: "礼貌", reward_stars: 1, metric_type: "步骤", sort_order: 15 },
+  { task_key: "reading_output", name: "读书成果积累", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "条", sort_order: 16 }
+];
+const summerDefaultProjects = [
+  { project_key: "space_recommend_card", name: "航空航天书籍推荐卡", target_count: 100, unit: "%", sort_order: 1 },
+  { project_key: "space_experiment", name: "航天实验或模型作品", target_count: 100, unit: "%", sort_order: 2 },
+  { project_key: "summer_essay", name: "暑期主题征文", target_count: 100, unit: "%", sort_order: 3 },
+  { project_key: "young_pioneer_practice", name: "少先队实践成果", target_count: 100, unit: "%", sort_order: 4 },
+  { project_key: "reading_result", name: "读书记录/推荐卡/读后感", target_count: 100, unit: "%", sort_order: 5 }
+];
 
 let state = {
   session: null,
@@ -24,7 +49,11 @@ let state = {
   starRecords: [],
   redemptions: [],
   trades: [],
+  summerTasks: [],
+  summerCheckins: [],
+  summerProjects: [],
   loading: false,
+  summerLoading: false,
   error: "",
   form: {
     childId: "",
@@ -57,6 +86,13 @@ let state = {
     childId: "all",
     guardianId: "all",
     type: "all"
+  },
+  summer: {
+    date: todayInputValue(),
+    childId: "",
+    notes: {},
+    metrics: {},
+    projectProgress: {}
   }
 };
 
@@ -224,9 +260,13 @@ async function loadAll() {
   if (!state.form.childId && state.children[0]) {
     state.form.childId = state.children[0].id;
     state.selectedChildId = state.children[0].id;
+    state.summer.childId = state.children[0].id;
   }
   if (!state.selectedChildId && state.children[0]) {
     state.selectedChildId = state.children[0].id;
+  }
+  if (!state.summer.childId && state.children[0]) {
+    state.summer.childId = state.children[0].id;
   }
   if (!state.tradeForm.fromChildId && state.children[0]) {
     state.tradeForm.fromChildId = state.children[0].id;
@@ -269,6 +309,7 @@ function renderView() {
   if (state.view === "stars") return renderStarsForm();
   if (state.view === "records") return renderRecords();
   if (state.view === "trades") return renderTrades();
+  if (state.view === "summer") return renderSummer();
   if (state.view === "rewards") return renderRewards();
   if (state.view === "badges") return renderBadges();
   if (state.view === "settings") return renderSettings();
@@ -553,6 +594,112 @@ function renderTradeItem(item) {
   `;
 }
 
+function renderSummer() {
+  const selectedChild = state.children.find((child) => child.id === state.summer.childId) || state.children[0];
+  const checkins = summerCheckinsForDay();
+  const completedCount = checkins.filter((item) => item.completed).length;
+  const tasks = summerTasks();
+  const completionRate = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+  const groupedTasks = groupBy(tasks, "task_group");
+
+  return `
+    <section class="section-title">
+      <h2>暑期打卡</h2>
+      <span>每日任务 + 专项推进</span>
+    </section>
+    <div class="panel form-card form-grid">
+      <div class="field">
+        <label>选择孩子</label>
+        <div class="chips">
+          ${state.children.map((child) => `
+            <button class="chip summer-child-chip ${child.id === state.summer.childId ? "active" : ""}" data-child-id="${child.id}" type="button">${escapeHtml(child.name)}</button>
+          `).join("")}
+        </div>
+      </div>
+      <div class="field">
+        <label for="summerDate">打卡日期</label>
+        <input id="summerDate" type="date" value="${escapeAttr(state.summer.date)}" />
+      </div>
+      <div class="summer-summary">
+        <div><strong>${completedCount}/${tasks.length}</strong><span>今日完成</span></div>
+        <div><strong>${completionRate}%</strong><span>完成率</span></div>
+        <div><strong>${selectedChild?.available_stars || 0} ⭐</strong><span>当前星星</span></div>
+      </div>
+    </div>
+
+    ${state.summerLoading ? `<div class="panel empty-state">正在同步暑期打卡...</div>` : ""}
+    ${state.error ? "" : Object.entries(groupedTasks).map(([groupName, items]) => renderSummerTaskGroup(groupName, items)).join("")}
+    ${state.error ? "" : renderSummerProjects()}
+  `;
+}
+
+function renderSummerTaskGroup(groupName, tasks) {
+  return `
+    <section class="section-title summer-group-title">
+      <h2>${escapeHtml(groupName)}</h2>
+      <span>${tasks.filter((task) => summerCheckin(task.id)?.completed).length}/${tasks.length}</span>
+    </section>
+    <div class="summer-task-list">
+      ${tasks.map(renderSummerTaskItem).join("")}
+    </div>
+  `;
+}
+
+function renderSummerTaskItem(task) {
+  const checkin = summerCheckin(task.id);
+  const completed = Boolean(checkin?.completed);
+  const noteValue = state.summer.notes[task.id] ?? checkin?.note ?? "";
+  const metricValue = state.summer.metrics[task.id] ?? checkin?.metric_value ?? "";
+  return `
+    <article class="panel summer-task-card ${completed ? "is-done" : ""}">
+      <div class="summer-task-main">
+        <button class="summer-check-btn ${completed ? "is-done" : ""}" data-task-id="${escapeAttr(task.id)}" type="button" aria-label="${completed ? "保存完成备注" : "标记完成"}">
+          ${completed ? "✓" : ""}
+        </button>
+        <div>
+          <strong>${escapeHtml(task.name)}</strong>
+          <div class="meta">${escapeHtml(task.category)} · 完成奖励 ${task.reward_stars} 星${task.metric_type ? ` · 记录${escapeHtml(task.metric_type)}` : ""}</div>
+        </div>
+      </div>
+      <div class="summer-task-fields">
+        <input class="summer-metric-input" data-task-id="${escapeAttr(task.id)}" inputmode="decimal" placeholder="${task.metric_type ? `数量/${escapeAttr(task.metric_type)}` : "数量"}" value="${escapeAttr(metricValue)}" />
+        <input class="summer-note-input" data-task-id="${escapeAttr(task.id)}" maxlength="80" placeholder="备注，例如质量好、主动完成" value="${escapeAttr(noteValue)}" />
+      </div>
+    </article>
+  `;
+}
+
+function renderSummerProjects() {
+  const projects = summerProjects();
+  return `
+    <section class="section-title">
+      <h2>暑假专项进度</h2>
+      <span>避免堆到最后</span>
+    </section>
+    <div class="summer-project-list">
+      ${projects.map((project) => {
+        const progress = Number(state.summer.projectProgress[project.id] ?? project.progress_value ?? 0);
+        return `
+          <article class="panel summer-project-card">
+            <div class="reward-head">
+              <div>
+                <strong>${escapeHtml(project.name)}</strong>
+                <div class="meta">目标：${escapeHtml(project.target_count)}${escapeHtml(project.unit || "%")}</div>
+              </div>
+              <span class="score">${Math.min(100, Math.max(0, progress))}%</span>
+            </div>
+            <div class="summer-progress"><div style="width: ${Math.min(100, Math.max(0, progress))}%"></div></div>
+            <div class="summer-project-actions">
+              <input class="summer-project-input" data-project-id="${escapeAttr(project.id)}" inputmode="numeric" type="number" min="0" max="100" value="${escapeAttr(progress)}" />
+              <button class="ghost-btn save-project-progress-btn" data-project-id="${escapeAttr(project.id)}" type="button">保存进度</button>
+            </div>
+          </article>
+        `;
+      }).join("") || `<div class="panel empty-state">还没有专项项目，请先运行暑期打卡 SQL。</div>`}
+    </div>
+  `;
+}
+
 function renderRewards() {
   const selectedChild = getSelectedChild();
   return `
@@ -714,6 +861,7 @@ function renderBadges() {
         <article class="badge-item ${earned ? "" : "locked"}">
           <div class="badge-icon">${earned ? "★" : "?"}</div>
           <strong>${escapeHtml(badge.name)}</strong>
+          ${badge.badge_group ? `<span class="level-pill">Lv${escapeHtml(badge.level || 1)}</span>` : ""}
           <div class="meta">${escapeHtml(badge.description)}</div>
         </article>
       `;
@@ -753,6 +901,7 @@ function renderNav() {
     ["stars", "+", "给星"],
     ["records", "≡", "记录"],
     ["trades", "⇄", "交易"],
+    ["summer", "✓", "暑假"],
     ["rewards", "★", "奖励"],
     ["badges", "◇", "勋章"]
   ];
@@ -782,9 +931,10 @@ function bindCommonEvents() {
   });
 
   document.querySelectorAll(".nav-btn").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       state.view = button.dataset.view;
       state.error = "";
+      if (state.view === "summer") await loadSummerData();
       renderApp();
     });
   });
@@ -810,6 +960,7 @@ function bindViewEvents() {
   bindStarFormEvents();
   bindRecordEvents();
   bindTradeEvents();
+  bindSummerEvents();
   bindRewardEvents();
   bindSettingsEvents();
 }
@@ -913,6 +1064,159 @@ async function submitTrade(event) {
   await loadAll();
   renderApp();
   toast("星星交易已记录");
+}
+
+async function loadSummerData() {
+  if (!state.family?.family_id) return;
+  state.summerLoading = true;
+  const familyId = state.family.family_id;
+  const childId = state.summer.childId || state.children[0]?.id || "";
+  const date = state.summer.date || todayInputValue();
+
+  const [tasksResult, checkinsResult, projectsResult] = await Promise.all([
+    api.select("summer_task_templates", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
+    childId
+      ? api.select("summer_task_checkins", `family_id=eq.${familyId}&child_id=eq.${childId}&checkin_date=eq.${date}&select=*`)
+      : Promise.resolve({ data: [], error: null }),
+    api.select("summer_projects", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`)
+  ]);
+
+  state.summerLoading = false;
+  const error = [tasksResult, checkinsResult, projectsResult].find((result) => result.error)?.error;
+  if (error) {
+    state.summerTasks = [];
+    state.summerCheckins = [];
+    state.summerProjects = [];
+    state.error = summerDataError(error);
+    return;
+  }
+
+  state.summerTasks = tasksResult.data || [];
+  state.summerCheckins = checkinsResult.data || [];
+  state.summerProjects = projectsResult.data || [];
+  state.summer.notes = {};
+  state.summer.metrics = {};
+  state.summer.projectProgress = {};
+}
+
+function bindSummerEvents() {
+  if (state.view !== "summer") return;
+
+  document.querySelectorAll(".summer-child-chip").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.summer.childId = button.dataset.childId;
+      state.error = "";
+      await loadSummerData();
+      renderApp();
+    });
+  });
+
+  document.querySelector("#summerDate")?.addEventListener("change", async (event) => {
+    state.summer.date = event.target.value || todayInputValue();
+    state.error = "";
+    await loadSummerData();
+    renderApp();
+  });
+
+  document.querySelectorAll(".summer-note-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.notes[event.target.dataset.taskId] = event.target.value;
+    });
+  });
+
+  document.querySelectorAll(".summer-metric-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.metrics[event.target.dataset.taskId] = event.target.value;
+    });
+  });
+
+  document.querySelectorAll(".summer-check-btn").forEach((button) => {
+    button.addEventListener("click", submitSummerCheckin);
+  });
+
+  document.querySelectorAll(".summer-project-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.projectProgress[event.target.dataset.projectId] = event.target.value;
+    });
+  });
+
+  document.querySelectorAll(".save-project-progress-btn").forEach((button) => {
+    button.addEventListener("click", submitSummerProjectProgress);
+  });
+}
+
+async function submitSummerCheckin(event) {
+  const button = event.currentTarget;
+  const taskId = button.dataset.taskId;
+  const task = summerTasks().find((item) => item.id === taskId);
+  const oldCheckin = summerCheckin(taskId);
+  if (!task) return;
+
+  const completed = true;
+  const metricRaw = state.summer.metrics[taskId] ?? document.querySelector(`.summer-metric-input[data-task-id="${cssEscape(taskId)}"]`)?.value ?? oldCheckin?.metric_value ?? "";
+  const note = state.summer.notes[taskId] ?? document.querySelector(`.summer-note-input[data-task-id="${cssEscape(taskId)}"]`)?.value ?? oldCheckin?.note ?? "";
+  const metricValue = metricRaw === "" ? null : Number(metricRaw);
+
+  if (metricRaw !== "" && !Number.isFinite(metricValue)) {
+    toast("数量请填写数字");
+    return;
+  }
+
+  button.disabled = true;
+  const { error } = await api.rpc("save_summer_task_checkin", {
+    p_family_id: state.family.family_id,
+    p_child_id: state.summer.childId,
+    p_guardian_id: state.guardian.guardian_id,
+    p_task_template_id: taskId,
+    p_checkin_date: state.summer.date,
+    p_completed: completed,
+    p_metric_value: metricValue,
+    p_note: note || null
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  await Promise.all([loadAll(), loadSummerData()]);
+  state.view = "summer";
+  renderApp();
+  toast(oldCheckin?.completed ? `${task.name} 已更新` : `${task.name} 已完成，星星已记录`);
+}
+
+async function submitSummerProjectProgress(event) {
+  const button = event.currentTarget;
+  const projectId = button.dataset.projectId;
+  const valueRaw = state.summer.projectProgress[projectId] ?? document.querySelector(`.summer-project-input[data-project-id="${cssEscape(projectId)}"]`)?.value ?? "0";
+  const progress = Number(valueRaw);
+
+  if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
+    toast("专项进度请填写 0 到 100");
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "保存中...";
+
+  const { error } = await api.rpc("update_summer_project_progress", {
+    p_family_id: state.family.family_id,
+    p_project_id: projectId,
+    p_guardian_id: state.guardian.guardian_id,
+    p_progress_value: progress,
+    p_note: null
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  await loadSummerData();
+  renderApp();
+  toast("专项进度已更新");
 }
 
 function bindStarFormEvents() {
@@ -1343,6 +1647,59 @@ function getSelectedChild() {
   return state.children.find((child) => child.id === state.selectedChildId) || state.children[0];
 }
 
+function summerTasks() {
+  return (state.summerTasks.length ? state.summerTasks : summerDefaultTasks).map((task, index) => ({
+    id: task.id || task.task_key,
+    task_key: task.task_key,
+    name: task.name,
+    task_group: task.task_group || "基础任务",
+    category: task.category || "学习",
+    reward_stars: Number(task.reward_stars || 1),
+    metric_type: task.metric_type || "",
+    sort_order: Number(task.sort_order || index + 1)
+  })).sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function summerProjects() {
+  return (state.summerProjects.length ? state.summerProjects : summerDefaultProjects).map((project, index) => ({
+    id: project.id || project.project_key,
+    project_key: project.project_key,
+    name: project.name,
+    target_count: Number(project.target_count || 100),
+    unit: project.unit || "%",
+    progress_value: Number(project.progress_value || 0),
+    sort_order: Number(project.sort_order || index + 1)
+  })).sort((a, b) => a.sort_order - b.sort_order);
+}
+
+function summerCheckinsForDay() {
+  return state.summerCheckins.filter((item) => item.checkin_date === state.summer.date);
+}
+
+function summerCheckin(taskId) {
+  return summerCheckinsForDay().find((item) => item.task_template_id === taskId);
+}
+
+function groupBy(items, key) {
+  return items.reduce((groups, item) => {
+    const groupName = item[key] || "其他";
+    groups[groupName] = groups[groupName] || [];
+    groups[groupName].push(item);
+    return groups;
+  }, {});
+}
+
+function todayInputValue() {
+  const now = new Date();
+  const offsetMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) return window.CSS.escape(value);
+  return String(value).replace(/"/g, '\\"');
+}
+
 function sumToday(childId, type) {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -1407,6 +1764,14 @@ function humanError(error) {
   if (message.includes("star_trades")) return "数据库还没有星星交易表，请先运行 supabase/transfer-stars-and-rename-family.sql。";
   if (message.includes("invalidate_reward_redemption") || message.includes("invalidated")) return "数据库还没有兑奖失效功能，请先运行 supabase/add-redemption-invalidation.sql。";
   if (message.includes("function") && message.includes("does not exist")) return "数据库函数不存在，请先运行对应的 Supabase SQL。";
+  return message;
+}
+
+function summerDataError(error) {
+  const message = humanError(error);
+  if (message.includes("summer_task_templates") || message.includes("summer_task_checkins") || message.includes("summer_projects")) {
+    return "数据库还没有暑期打卡表，请先运行 supabase/add-summer-vacation-checkins.sql。";
+  }
   return message;
 }
 
