@@ -10,7 +10,7 @@ create table if not exists public.summer_task_templates (
   name text not null,
   task_group text not null default '基础任务',
   category text not null default '学习',
-  reward_stars int not null default 1 check (reward_stars >= 0 and reward_stars <= 5),
+  reward_stars int not null default 2 check (reward_stars >= 2 and reward_stars <= 5),
   metric_type text,
   sort_order int not null default 0,
   is_active boolean not null default true,
@@ -27,6 +27,8 @@ create table if not exists public.summer_task_checkins (
   checkin_date date not null,
   completed boolean not null default false,
   metric_value numeric,
+  metric_data jsonb not null default '{}'::jsonb,
+  awarded_stars int not null default 2 check (awarded_stars >= 2 and awarded_stars <= 5),
   note text,
   guardian_id uuid not null references public.guardians(id),
   star_record_id uuid references public.star_records(id) on delete set null,
@@ -89,7 +91,9 @@ create or replace function public.save_summer_task_checkin(
   p_task_template_id uuid,
   p_checkin_date date,
   p_completed boolean,
+  p_award_stars int default 2,
   p_metric_value numeric default null,
+  p_metric_data jsonb default '{}'::jsonb,
   p_note text default null
 )
 returns public.summer_task_checkins
@@ -102,9 +106,14 @@ declare
   old_checkin public.summer_task_checkins%rowtype;
   saved_checkin public.summer_task_checkins%rowtype;
   new_star_record public.star_records%rowtype;
+  metric_text text;
 begin
   if not public.is_family_member(p_family_id) then
     raise exception '没有访问这个家庭空间的权限';
+  end if;
+
+  if p_award_stars < 2 or p_award_stars > 5 then
+    raise exception '暑期打卡奖励星请填写 2 到 5';
   end if;
 
   if not exists (
@@ -148,6 +157,8 @@ begin
     checkin_date,
     completed,
     metric_value,
+    metric_data,
+    awarded_stars,
     note,
     guardian_id,
     created_by
@@ -159,6 +170,8 @@ begin
     p_checkin_date,
     p_completed,
     p_metric_value,
+    coalesce(p_metric_data, '{}'::jsonb),
+    p_award_stars,
     nullif(trim(coalesce(p_note, '')), ''),
     p_guardian_id,
     auth.uid()
@@ -167,12 +180,21 @@ begin
   do update set
     completed = excluded.completed,
     metric_value = excluded.metric_value,
+    metric_data = excluded.metric_data,
+    awarded_stars = case
+      when public.summer_task_checkins.star_record_id is null then excluded.awarded_stars
+      else public.summer_task_checkins.awarded_stars
+    end,
     note = excluded.note,
     guardian_id = excluded.guardian_id
   returning * into saved_checkin;
 
+  select string_agg(key || ':' || value, '，')
+  into metric_text
+  from jsonb_each_text(coalesce(p_metric_data, '{}'::jsonb));
+
   if p_completed
-    and target_task.reward_stars > 0
+    and p_award_stars > 0
     and coalesce(old_checkin.completed, false) = false
   then
     select *
@@ -182,9 +204,14 @@ begin
       p_child_id,
       p_guardian_id,
       'praise',
-      target_task.reward_stars,
+      p_award_stars,
       target_task.category,
-      concat('暑期打卡完成：', target_task.name, coalesce('；' || nullif(trim(coalesce(p_note, '')), ''), ''))
+      concat(
+        '暑期打卡完成：',
+        target_task.name,
+        coalesce('；数量：' || nullif(metric_text, ''), ''),
+        coalesce('；' || nullif(trim(coalesce(p_note, '')), ''), '')
+      )
     );
 
     update public.summer_task_checkins
@@ -307,7 +334,7 @@ grant select on public.summer_task_templates to authenticated;
 grant select on public.summer_task_checkins to authenticated;
 grant select on public.summer_projects to authenticated;
 grant select on public.summer_project_updates to authenticated;
-grant execute on function public.save_summer_task_checkin(uuid, uuid, uuid, uuid, date, boolean, numeric, text) to authenticated;
+grant execute on function public.save_summer_task_checkin(uuid, uuid, uuid, uuid, date, boolean, int, numeric, jsonb, text) to authenticated;
 grant execute on function public.update_summer_project_progress(uuid, uuid, uuid, numeric, text) to authenticated;
 
 with family as (
@@ -323,22 +350,22 @@ insert into public.summer_task_templates (
   metric_type,
   sort_order
 )
-select id, 'morning_reading', '晨读', '基础任务', '学习', 1, '分钟', 1 from family
-union all select id, 'handwriting', '练字', '基础任务', '学习', 1, '分钟', 2 from family
-union all select id, 'math_drill', '数学口算与应用题', '基础任务', '学习', 2, '题', 3 from family
-union all select id, 'summer_homework_am', '暑假作业上午段', '基础任务', '学习', 1, '分钟', 4 from family
-union all select id, 'summer_homework_pm', '暑假作业下午段', '基础任务', '学习', 1, '分钟', 5 from family
-union all select id, 'reading', '阅读 1 小时', '基础任务', '学习', 2, '分钟', 6 from family
-union all select id, 'sports_outdoor', '运动户外', '基础任务', '运动', 2, '分钟', 7 from family
-union all select id, 'english_checkin', '英语打卡', '基础任务', '学习', 1, '分钟', 8 from family
-union all select id, 'housework', '家务劳动', '基础任务', '自理能力', 1, '次', 9 from family
-union all select id, 'night_review', '睡前复盘', '基础任务', '学习', 1, '篇', 10 from family
-union all select id, 'screen_control', '电子产品不超过 30 分钟', '基础任务', '自理能力', 1, '达成', 11 from family
-union all select id, 'space_reading', '航天主题阅读', '暑假专项', '学习', 1, '分钟', 12 from family
-union all select id, 'space_project', '航天实践作品', '暑假专项', '学习', 1, '步骤', 13 from family
-union all select id, 'essay_project', '暑期主题征文推进', '暑假专项', '学习', 1, '步骤', 14 from family
-union all select id, 'young_pioneer', '少先队实践推进', '暑假专项', '礼貌', 1, '步骤', 15 from family
-union all select id, 'reading_output', '读书成果积累', '暑假专项', '学习', 1, '条', 16 from family
+select id, 'morning_reading', '晨读', '基础任务', '学习', 2, '分钟', 1 from family
+union all select id, 'handwriting', '练字', '基础任务', '学习', 2, '分钟', 2 from family
+union all select id, 'math_drill', '数学口算与应用题', '基础任务', '学习', 3, '题', 3 from family
+union all select id, 'summer_homework_am', '暑假作业上午段', '基础任务', '学习', 2, '分钟', 4 from family
+union all select id, 'summer_homework_pm', '暑假作业下午段', '基础任务', '学习', 2, '分钟', 5 from family
+union all select id, 'reading', '阅读 1 小时', '基础任务', '学习', 3, '分钟', 6 from family
+union all select id, 'sports_outdoor', '运动户外', '基础任务', '运动', 3, '分钟', 7 from family
+union all select id, 'english_checkin', '英语打卡', '基础任务', '学习', 2, '分钟', 8 from family
+union all select id, 'housework', '家务劳动', '基础任务', '自理能力', 2, '次', 9 from family
+union all select id, 'night_review', '睡前复盘', '基础任务', '学习', 2, '篇', 10 from family
+union all select id, 'screen_control', '电子产品不超过 30 分钟', '基础任务', '自理能力', 2, '达成', 11 from family
+union all select id, 'space_reading', '航天主题阅读', '暑假专项', '学习', 2, '分钟', 12 from family
+union all select id, 'space_project', '航天实践作品', '暑假专项', '学习', 2, '步骤', 13 from family
+union all select id, 'essay_project', '暑期主题征文推进', '暑假专项', '学习', 2, '步骤', 14 from family
+union all select id, 'young_pioneer', '少先队实践推进', '暑假专项', '礼貌', 2, '步骤', 15 from family
+union all select id, 'reading_output', '读书成果积累', '暑假专项', '学习', 2, '条', 16 from family
 on conflict (family_id, task_key) do update set
   name = excluded.name,
   task_group = excluded.task_group,

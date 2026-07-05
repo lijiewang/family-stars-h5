@@ -11,22 +11,22 @@ const improvementReasons = {
   "一杉": ["吃饭离开座位", "睡前跑出房间", "哭闹表达", "不愿收玩具", "抢玩具"]
 };
 const summerDefaultTasks = [
-  { task_key: "morning_reading", name: "晨读", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 1 },
-  { task_key: "handwriting", name: "练字", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 2 },
-  { task_key: "math_drill", name: "数学口算与应用题", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "题", sort_order: 3 },
-  { task_key: "summer_homework_am", name: "暑假作业上午段", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 4 },
-  { task_key: "summer_homework_pm", name: "暑假作业下午段", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 5 },
-  { task_key: "reading", name: "阅读 1 小时", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 6 },
-  { task_key: "sports_outdoor", name: "运动户外", task_group: "基础任务", category: "运动", reward_stars: 2, metric_type: "分钟", sort_order: 7 },
-  { task_key: "english_checkin", name: "英语打卡", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 8 },
-  { task_key: "housework", name: "家务劳动", task_group: "基础任务", category: "自理能力", reward_stars: 1, metric_type: "次", sort_order: 9 },
-  { task_key: "night_review", name: "睡前复盘", task_group: "基础任务", category: "学习", reward_stars: 1, metric_type: "篇", sort_order: 10 },
-  { task_key: "screen_control", name: "电子产品不超过 30 分钟", task_group: "基础任务", category: "自理能力", reward_stars: 1, metric_type: "达成", sort_order: 11 },
-  { task_key: "space_reading", name: "航天主题阅读", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "分钟", sort_order: 12 },
-  { task_key: "space_project", name: "航天实践作品", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "步骤", sort_order: 13 },
-  { task_key: "essay_project", name: "暑期主题征文推进", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "步骤", sort_order: 14 },
-  { task_key: "young_pioneer", name: "少先队实践推进", task_group: "暑假专项", category: "礼貌", reward_stars: 1, metric_type: "步骤", sort_order: 15 },
-  { task_key: "reading_output", name: "读书成果积累", task_group: "暑假专项", category: "学习", reward_stars: 1, metric_type: "条", sort_order: 16 }
+  { task_key: "morning_reading", name: "晨读", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 1 },
+  { task_key: "handwriting", name: "练字", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 2 },
+  { task_key: "math_drill", name: "数学口算与应用题", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "题", sort_order: 3 },
+  { task_key: "summer_homework_am", name: "暑假作业上午段", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 4 },
+  { task_key: "summer_homework_pm", name: "暑假作业下午段", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 5 },
+  { task_key: "reading", name: "阅读 1 小时", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "分钟", sort_order: 6 },
+  { task_key: "sports_outdoor", name: "运动户外", task_group: "基础任务", category: "运动", reward_stars: 3, metric_type: "分钟", sort_order: 7 },
+  { task_key: "english_checkin", name: "英语打卡", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 8 },
+  { task_key: "housework", name: "家务劳动", task_group: "基础任务", category: "自理能力", reward_stars: 2, metric_type: "次", sort_order: 9 },
+  { task_key: "night_review", name: "睡前复盘", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "篇", sort_order: 10 },
+  { task_key: "screen_control", name: "电子产品不超过 30 分钟", task_group: "基础任务", category: "自理能力", reward_stars: 2, metric_type: "达成", sort_order: 11 },
+  { task_key: "space_reading", name: "航天主题阅读", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 12 },
+  { task_key: "space_project", name: "航天实践作品", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "步骤", sort_order: 13 },
+  { task_key: "essay_project", name: "暑期主题征文推进", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "步骤", sort_order: 14 },
+  { task_key: "young_pioneer", name: "少先队实践推进", task_group: "暑假专项", category: "礼貌", reward_stars: 2, metric_type: "步骤", sort_order: 15 },
+  { task_key: "reading_output", name: "读书成果积累", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "条", sort_order: 16 }
 ];
 const summerDefaultProjects = [
   { project_key: "space_recommend_card", name: "航空航天书籍推荐卡", target_count: 100, unit: "%", sort_order: 1 },
@@ -92,6 +92,7 @@ let state = {
     childId: "",
     notes: {},
     metrics: {},
+    starAwards: {},
     projectProgress: {}
   }
 };
@@ -649,7 +650,9 @@ function renderSummerTaskItem(task) {
   const checkin = summerCheckin(task.id);
   const completed = Boolean(checkin?.completed);
   const noteValue = state.summer.notes[task.id] ?? checkin?.note ?? "";
-  const metricValue = state.summer.metrics[task.id] ?? checkin?.metric_value ?? "";
+  const metricData = summerMetricData(task.id, checkin);
+  const awardStars = summerAwardStars(task, checkin);
+  const metricSummaryText = metricSummary(metricData, summerMetricFields(task));
   return `
     <article class="panel summer-task-card ${completed ? "is-done" : ""}">
       <div class="summer-task-main">
@@ -660,11 +663,23 @@ function renderSummerTaskItem(task) {
         </div>
         <div class="summer-task-content">
           <strong>${escapeHtml(task.name)}</strong>
-          <div class="meta">${escapeHtml(task.category)} · 完成奖励 ${task.reward_stars} 星${task.metric_type ? ` · 记录${escapeHtml(task.metric_type)}` : ""}</div>
+          <div class="meta">${escapeHtml(task.category)} · 最少 2 星 · 可按完成情况调整${metricSummaryText ? ` · ${escapeHtml(metricSummaryText)}` : ""}</div>
         </div>
       </div>
-      <div class="summer-task-fields">
-        <input class="summer-metric-input" data-task-id="${escapeAttr(task.id)}" inputmode="decimal" placeholder="${task.metric_type ? `数量/${escapeAttr(task.metric_type)}` : "数量"}" value="${escapeAttr(metricValue)}" />
+      <div class="summer-award-row">
+        <label for="summerAward-${escapeAttr(task.id)}">奖励星</label>
+        <input id="summerAward-${escapeAttr(task.id)}" class="summer-award-input" data-task-id="${escapeAttr(task.id)}" inputmode="numeric" type="number" min="2" max="5" value="${escapeAttr(awardStars)}" ${completed ? "disabled" : ""} />
+        ${completed ? `<span>已奖励 ${escapeHtml(checkin?.awarded_stars || awardStars)} 星</span>` : `<span>范围 2-5 星</span>`}
+      </div>
+      <div class="summer-metric-grid">
+        ${summerMetricFields(task).map((field) => `
+          <label class="summer-metric-field">
+            <span>${escapeHtml(field.label)}</span>
+            <input class="summer-metric-input" data-task-id="${escapeAttr(task.id)}" data-metric-key="${escapeAttr(field.key)}" inputmode="decimal" placeholder="${escapeAttr(field.placeholder || field.unit || "")}" value="${escapeAttr(metricData[field.key] ?? "")}" />
+          </label>
+        `).join("")}
+      </div>
+      <div class="summer-task-note">
         <input class="summer-note-input" data-task-id="${escapeAttr(task.id)}" maxlength="80" placeholder="备注，例如质量好、主动完成" value="${escapeAttr(noteValue)}" />
       </div>
     </article>
@@ -1098,6 +1113,7 @@ async function loadSummerData() {
   state.summerProjects = projectsResult.data || [];
   state.summer.notes = {};
   state.summer.metrics = {};
+  state.summer.starAwards = {};
   state.summer.projectProgress = {};
 }
 
@@ -1128,7 +1144,18 @@ function bindSummerEvents() {
 
   document.querySelectorAll(".summer-metric-input").forEach((input) => {
     input.addEventListener("input", (event) => {
-      state.summer.metrics[event.target.dataset.taskId] = event.target.value;
+      const taskId = event.target.dataset.taskId;
+      const metricKey = event.target.dataset.metricKey;
+      state.summer.metrics[taskId] = {
+        ...(state.summer.metrics[taskId] || {}),
+        [metricKey]: event.target.value
+      };
+    });
+  });
+
+  document.querySelectorAll(".summer-award-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.starAwards[event.target.dataset.taskId] = event.target.value;
     });
   });
 
@@ -1155,12 +1182,19 @@ async function submitSummerCheckin(event) {
   if (!task) return;
 
   const completed = true;
-  const metricRaw = state.summer.metrics[taskId] ?? document.querySelector(`.summer-metric-input[data-task-id="${cssEscape(taskId)}"]`)?.value ?? oldCheckin?.metric_value ?? "";
+  const metricData = collectSummerMetricData(task);
   const note = state.summer.notes[taskId] ?? document.querySelector(`.summer-note-input[data-task-id="${cssEscape(taskId)}"]`)?.value ?? oldCheckin?.note ?? "";
-  const metricValue = metricRaw === "" ? null : Number(metricRaw);
+  const awardRaw = state.summer.starAwards[taskId] ?? document.querySelector(`.summer-award-input[data-task-id="${cssEscape(taskId)}"]`)?.value ?? oldCheckin?.awarded_stars ?? task.reward_stars;
+  const awardStars = Number(awardRaw);
+  const invalidMetric = Object.entries(metricData).find(([, value]) => value !== "" && !Number.isFinite(Number(value)));
 
-  if (metricRaw !== "" && !Number.isFinite(metricValue)) {
-    toast("数量请填写数字");
+  if (invalidMetric) {
+    toast("数量和时间请填写数字");
+    return;
+  }
+
+  if (!Number.isInteger(awardStars) || awardStars < 2 || awardStars > 5) {
+    toast("奖励星请填写 2 到 5");
     return;
   }
 
@@ -1172,7 +1206,9 @@ async function submitSummerCheckin(event) {
     p_task_template_id: taskId,
     p_checkin_date: state.summer.date,
     p_completed: completed,
-    p_metric_value: metricValue,
+    p_award_stars: awardStars,
+    p_metric_value: primaryMetricValue(metricData),
+    p_metric_data: normalizeMetricPayload(metricData),
     p_note: note || null
   });
 
@@ -1674,6 +1710,87 @@ function summerProjects() {
   })).sort((a, b) => a.sort_order - b.sort_order);
 }
 
+function summerMetricFields(task) {
+  const byTask = {
+    math_drill: [
+      { key: "oral_math_count", label: "口算题", unit: "题" },
+      { key: "word_problem_count", label: "应用题", unit: "题" },
+      { key: "minutes", label: "用时", unit: "分钟" }
+    ],
+    sports_outdoor: [
+      { key: "minutes", label: "运动时间", unit: "分钟" },
+      { key: "jump_rope_count", label: "跳绳", unit: "个" },
+      { key: "sit_up_count", label: "仰卧起坐", unit: "个" },
+      { key: "hike_km", label: "登山", unit: "公里" },
+      { key: "bike_km", label: "骑车", unit: "公里" },
+      { key: "ski_meter", label: "滑雪下滑", unit: "米" }
+    ],
+    housework: [
+      { key: "count", label: "家务次数", unit: "次" }
+    ],
+    night_review: [
+      { key: "writing_count", label: "记录篇数", unit: "篇" },
+      { key: "minutes", label: "用时", unit: "分钟" }
+    ],
+    reading_output: [
+      { key: "output_count", label: "成果条数", unit: "条" },
+      { key: "minutes", label: "用时", unit: "分钟" }
+    ],
+    screen_control: [
+      { key: "screen_minutes", label: "电子产品", unit: "分钟" }
+    ]
+  };
+
+  return byTask[task.task_key] || [
+    { key: "minutes", label: task.metric_type ? `${task.metric_type}记录` : "时间", unit: task.metric_type || "分钟" }
+  ];
+}
+
+function summerMetricData(taskId, checkin) {
+  if (state.summer.metrics[taskId]) return state.summer.metrics[taskId];
+  if (checkin?.metric_data && typeof checkin.metric_data === "object") return checkin.metric_data;
+  if (checkin?.metric_value !== null && checkin?.metric_value !== undefined) {
+    return { minutes: checkin.metric_value };
+  }
+  return {};
+}
+
+function summerAwardStars(task, checkin) {
+  const value = state.summer.starAwards[task.id] ?? checkin?.awarded_stars ?? task.reward_stars ?? 2;
+  return Math.max(2, Math.min(5, Number(value) || 2));
+}
+
+function collectSummerMetricData(task) {
+  const values = {};
+  summerMetricFields(task).forEach((field) => {
+    const node = document.querySelector(`.summer-metric-input[data-task-id="${cssEscape(task.id)}"][data-metric-key="${cssEscape(field.key)}"]`);
+    values[field.key] = state.summer.metrics[task.id]?.[field.key] ?? node?.value ?? "";
+  });
+  state.summer.metrics[task.id] = values;
+  return values;
+}
+
+function normalizeMetricPayload(metricData) {
+  return Object.entries(metricData).reduce((payload, [key, value]) => {
+    if (value === "" || value === null || value === undefined) return payload;
+    payload[key] = Number(value);
+    return payload;
+  }, {});
+}
+
+function primaryMetricValue(metricData) {
+  const payload = normalizeMetricPayload(metricData);
+  const key = ["minutes", "oral_math_count", "count", "output_count", "writing_count"].find((item) => payload[item] !== undefined);
+  return key ? payload[key] : null;
+}
+
+function metricSummary(metricData, fields) {
+  return fields
+    .filter((field) => metricData[field.key] !== "" && metricData[field.key] !== undefined && metricData[field.key] !== null)
+    .map((field) => `${field.label}${metricData[field.key]}${field.unit || ""}`)
+    .join("，");
+}
+
 function summerCheckinsForDay() {
   return state.summerCheckins.filter((item) => item.checkin_date === state.summer.date);
 }
@@ -1771,6 +1888,8 @@ function humanError(error) {
 
 function summerDataError(error) {
   const message = humanError(error);
+  if (message.includes("save_summer_task_checkin")) return "数据库还没有新版暑期打卡奖励和数量记录函数，请先运行 supabase/add-summer-checkin-metrics-and-awards.sql。";
+  if (message.includes("metric_data") || message.includes("awarded_stars")) return "数据库还没有新版暑期打卡数量字段，请先运行 supabase/add-summer-checkin-metrics-and-awards.sql。";
   if (message.includes("summer_task_templates") || message.includes("summer_task_checkins") || message.includes("summer_projects")) {
     return "数据库还没有暑期打卡表，请先运行 supabase/add-summer-vacation-checkins.sql。";
   }

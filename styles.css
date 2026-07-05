@@ -645,15 +645,54 @@ button {
   line-height: 1.25;
 }
 
-.summer-task-fields {
+.summer-award-row {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-columns: auto 76px minmax(0, 1fr);
   gap: 8px;
+  align-items: center;
   margin-top: 12px;
-  margin-left: 64px;
+  margin-left: 86px;
 }
 
-.summer-task-fields input,
+.summer-award-row label,
+.summer-award-row span,
+.summer-metric-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.summer-award-row input {
+  width: 76px;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  color: var(--ink);
+}
+
+.summer-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  margin-left: 86px;
+}
+
+.summer-metric-field {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.summer-task-note {
+  margin-top: 8px;
+  margin-left: 86px;
+}
+
+.summer-task-note input,
+.summer-metric-grid input,
 .summer-project-actions input {
   min-width: 0;
   min-height: 40px;
@@ -1005,6 +1044,16 @@ button {
   .summer-task-fields {
     grid-template-columns: 1fr;
     margin-left: 0;
+  }
+
+  .summer-award-row,
+  .summer-metric-grid,
+  .summer-task-note {
+    margin-left: 0;
+  }
+
+  .summer-metric-grid {
+    grid-template-columns: 1fr;
   }
 
   .summer-task-main {
