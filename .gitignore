@@ -4,3 +4,6 @@ node_modules/
 dist/
 family-stars-h5.zip
 .next/
+automation-data/calendar/*.json
+automation-data/mail/*.json
+automation-data/followups/*.json
