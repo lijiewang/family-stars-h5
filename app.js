@@ -653,10 +653,12 @@ function renderSummerTaskItem(task) {
   return `
     <article class="panel summer-task-card ${completed ? "is-done" : ""}">
       <div class="summer-task-main">
-        <button class="summer-check-btn ${completed ? "is-done" : ""}" data-task-id="${escapeAttr(task.id)}" type="button" aria-label="${completed ? "保存完成备注" : "标记完成"}">
-          ${completed ? "✓" : ""}
-        </button>
-        <div>
+        <div class="summer-check-cell">
+          <button class="summer-check-btn ${completed ? "is-done" : ""}" data-task-id="${escapeAttr(task.id)}" type="button" aria-label="${completed ? "保存完成备注" : "标记完成"}">
+            ${completed ? "✓" : ""}
+          </button>
+        </div>
+        <div class="summer-task-content">
           <strong>${escapeHtml(task.name)}</strong>
           <div class="meta">${escapeHtml(task.category)} · 完成奖励 ${task.reward_stars} 星${task.metric_type ? ` · 记录${escapeHtml(task.metric_type)}` : ""}</div>
         </div>
