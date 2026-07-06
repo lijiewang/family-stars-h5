@@ -6,6 +6,7 @@ alter table public.badges
 create table if not exists public.summer_task_templates (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
+  child_id uuid references public.children(id) on delete cascade,
   task_key text not null,
   name text not null,
   task_group text not null default '基础任务',
@@ -16,7 +17,7 @@ create table if not exists public.summer_task_templates (
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique (family_id, task_key)
+  unique (family_id, child_id, task_key)
 );
 
 create table if not exists public.summer_task_checkins (
@@ -65,6 +66,7 @@ create table if not exists public.summer_project_updates (
 );
 
 create index if not exists idx_summer_task_templates_family on public.summer_task_templates(family_id, sort_order);
+create index if not exists idx_summer_task_templates_child on public.summer_task_templates(child_id, sort_order);
 create index if not exists idx_summer_task_checkins_child_date on public.summer_task_checkins(child_id, checkin_date desc);
 create index if not exists idx_summer_projects_family on public.summer_projects(family_id, sort_order);
 create index if not exists idx_summer_project_updates_project on public.summer_project_updates(project_id, created_at desc);

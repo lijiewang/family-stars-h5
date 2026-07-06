@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>一杉暑期每日打卡周计划</title>
+    <style>
+      @page { size: A4 landscape; margin: 10mm; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: #111827;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f8fafc;
+      }
+      .week {
+        min-height: 185mm;
+        padding: 10mm;
+        background: #fff;
+        page-break-after: always;
+      }
+      .week:last-child { page-break-after: auto; }
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
+      h1 { margin: 0; font-size: 24px; line-height: 1.2; }
+      .subtitle { margin-top: 4px; color: #475569; font-size: 13px; }
+      .meta { display: grid; grid-template-columns: repeat(3, auto); gap: 8px; color: #334155; font-size: 13px; white-space: nowrap; }
+      .pill { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 999px; }
+      .focus { display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; margin-bottom: 8px; }
+      .box { min-height: 36px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; font-size: 13px; line-height: 1.45; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; background: #fff; }
+      th, td { border: 1px solid #94a3b8; padding: 5px 4px; text-align: center; vertical-align: middle; font-size: 12px; line-height: 1.25; }
+      th { background: #e2e8f0; font-weight: 800; }
+      .task { width: 19%; text-align: left; font-weight: 800; background: #f1f5f9; }
+      .check { display: inline-block; width: 18px; height: 18px; border: 2px solid #334155; border-radius: 4px; vertical-align: middle; }
+      .small { color: #64748b; font-size: 10px; font-weight: 500; }
+      .metrics { margin-top: 8px; }
+      .metrics td { height: 25px; }
+      .footer { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
+      .sign { min-height: 38px; }
+      @media screen {
+        body { padding: 16px; }
+        .week { width: 297mm; margin: 0 auto 16px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12); }
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const tasks = [
+        ["自主吃饭", "坐在餐桌完成吃饭，尽量自己吃完"],
+        ["自主玩耍", "能自己安静玩一段时间"],
+        ["自主穿衣", "自己穿衣/穿鞋，家长少帮忙"],
+        ["不弄乱沙发", "玩后恢复沙发和靠垫"],
+        ["不吵闹哥哥写作业", "哥哥学习时轻声、不打扰"],
+        ["电子产品 ≤ 30 分钟", "主动遵守时间约定"],
+        ["户外运动 2 小时", "公园、骑车、跑跳、球类均可"],
+        ["识字 5 个", "会认、会说，能复习前一天"],
+        ["经典诵读诗词 1 首", "跟读、背诵或能接句"],
+        ["英语学习 1 课", "平板英语课，完成后复述一点"]
+      ];
+      const metrics = ["识字/诗词/英语", "户外运动分钟", "自主习惯表现"];
+      const weeks = [
+        ["第 1 周", "2026-07-06", "2026-07-12", [["周一","7/6"],["周二","7/7"],["周三","7/8"],["周四","7/9"],["周五","7/10"],["周六","7/11"],["周日","7/12"]], "先建立节奏：吃饭、穿衣、电子产品和户外运动先稳定。"],
+        ["第 2 周", "2026-07-13", "2026-07-19", [["周一","7/13"],["周二","7/14"],["周三","7/15"],["周四","7/16"],["周五","7/17"],["周六","7/18"],["周日","7/19"]], "强化自主玩耍和不打扰哥哥，知识启蒙每天短时高频。"],
+        ["第 3 周", "2026-07-20", "2026-07-26", [["周一","7/20"],["周二","7/21"],["周三","7/22"],["周四","7/23"],["周五","7/24"],["周六","7/25"],["周日","7/26"]], "识字和诗词开始复习前面内容，户外运动尽量接近 2 小时。"],
+        ["第 4 周", "2026-07-27", "2026-08-02", [["周一","7/27"],["周二","7/28"],["周三","7/29"],["周四","7/30"],["周五","7/31"],["周六","8/1"],["周日","8/2"]], "把沙发整理、轻声不打扰变成日常习惯。"],
+        ["第 5 周", "2026-08-03", "2026-08-09", [["周一","8/3"],["周二","8/4"],["周三","8/5"],["周四","8/6"],["周五","8/7"],["周六","8/8"],["周日","8/9"]], "提高完成质量：主动说出今天学会的字、诗词或英语内容。"],
+        ["第 6 周", "2026-08-10", "2026-08-16", [["周一","8/10"],["周二","8/11"],["周三","8/12"],["周四","8/13"],["周五","8/14"],["周六","8/15"],["周日","8/16"]], "继续稳定电子产品控制，鼓励自己开始、自己收尾。"],
+        ["第 7 周", "2026-08-17", "2026-08-23", [["周一","8/17"],["周二","8/18"],["周三","8/19"],["周四","8/20"],["周五","8/21"],["周六","8/22"],["周日","8/23"]], "进入开学前调整，作息和自主生活习惯优先。"],
+        ["第 8 周", "2026-08-24", "2026-08-30", [["周一","8/24"],["周二","8/25"],["周三","8/26"],["周四","8/27"],["周五","8/28"],["周六","8/29"],["周日","8/30"]], "收尾复盘：保留最稳定的 3 个好习惯带到开学后。"]
+      ];
+      const checks = (days) => days.map(() => '<td><span class="check"></span></td>').join("");
+      document.body.insertAdjacentHTML("beforeend", weeks.map(([title, start, end, days, focus]) => `
+        <section class="week">
+          <header>
+            <div>
+              <h1>一杉暑期每日打卡 - ${title}</h1>
+              <div class="subtitle">${start} 至 ${end}｜完成一项就在格子里打勾，每项奖励不低于 2 星</div>
+            </div>
+            <div class="meta">
+              <span class="pill">孩子：一杉</span>
+              <span class="pill">本周目标星：____</span>
+              <span class="pill">本周实际星：____</span>
+            </div>
+          </header>
+          <div class="focus">
+            <div class="box"><strong>本周重点：</strong>${focus}</div>
+            <div class="box"><strong>奖励提醒：</strong>每项至少 2 星，主动完成、情绪稳定、质量好可以加到 3-5 星。</div>
+          </div>
+          <table>
+            <thead>
+              <tr><th class="task">每日任务</th>${days.map(([name, date]) => `<th>${name}<br />${date}</th>`).join("")}</tr>
+            </thead>
+            <tbody>
+              ${tasks.map(([name, note]) => `<tr><td class="task">${name}<br /><span class="small">${note}</span></td>${checks(days)}</tr>`).join("")}
+            </tbody>
+          </table>
+          <table class="metrics">
+            <tbody>
+              <tr><th class="task">数量记录</th>${days.map(([name]) => `<th>${name}</th>`).join("")}</tr>
+              ${metrics.map((name) => `<tr><td class="task">${name}</td>${days.map(() => "<td></td>").join("")}</tr>`).join("")}
+            </tbody>
+          </table>
+          <div class="footer">
+            <div class="box sign"><strong>孩子表现：</strong></div>
+            <div class="box sign"><strong>家长评价：</strong></div>
+            <div class="box sign"><strong>下周调整：</strong></div>
+          </div>
+        </section>
+      `).join(""));
+    </script>
+  </body>
+</html>

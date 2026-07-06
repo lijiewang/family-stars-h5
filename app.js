@@ -35,6 +35,18 @@ const summerDefaultProjects = [
   { project_key: "young_pioneer_practice", name: "少先队实践成果", target_count: 100, unit: "%", sort_order: 4 },
   { project_key: "reading_result", name: "读书记录/推荐卡/读后感", target_count: 100, unit: "%", sort_order: 5 }
 ];
+const yishanSummerTasks = [
+  { task_key: "yishan_self_meal", name: "自主吃饭", task_group: "行为习惯", category: "自理能力", reward_stars: 2, metric_type: "次", sort_order: 1 },
+  { task_key: "yishan_self_play", name: "自主玩耍", task_group: "行为习惯", category: "自理能力", reward_stars: 2, metric_type: "分钟", sort_order: 2 },
+  { task_key: "yishan_self_dress", name: "自主穿衣", task_group: "行为习惯", category: "自理能力", reward_stars: 2, metric_type: "次", sort_order: 3 },
+  { task_key: "yishan_sofa_tidy", name: "不弄乱沙发", task_group: "行为习惯", category: "整理", reward_stars: 2, metric_type: "达成", sort_order: 4 },
+  { task_key: "yishan_quiet_for_brother", name: "不吵闹哥哥写作业", task_group: "行为习惯", category: "兄弟互动", reward_stars: 2, metric_type: "达成", sort_order: 5 },
+  { task_key: "yishan_screen_control", name: "电子产品不超过 30 分钟", task_group: "行为习惯", category: "自理能力", reward_stars: 2, metric_type: "分钟", sort_order: 6 },
+  { task_key: "yishan_outdoor_sports", name: "户外运动 2 小时", task_group: "行为习惯", category: "运动", reward_stars: 3, metric_type: "分钟", sort_order: 7 },
+  { task_key: "yishan_character_learning", name: "识字 5 个", task_group: "知识启蒙", category: "学习", reward_stars: 2, metric_type: "个", sort_order: 8 },
+  { task_key: "yishan_poem_recitation", name: "经典诵读诗词 1 首", task_group: "知识启蒙", category: "学习", reward_stars: 2, metric_type: "首", sort_order: 9 },
+  { task_key: "yishan_english_lesson", name: "英语学习 1 课", task_group: "知识启蒙", category: "学习", reward_stars: 2, metric_type: "课", sort_order: 10 }
+];
 
 let state = {
   session: null,
@@ -1090,8 +1102,13 @@ async function loadSummerData() {
   const childId = state.summer.childId || state.children[0]?.id || "";
   const date = state.summer.date || todayInputValue();
 
-  const [tasksResult, checkinsResult, projectsResult] = await Promise.all([
-    api.select("summer_task_templates", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
+  let tasksResult = await api.select("summer_task_templates", `family_id=eq.${familyId}&is_active=eq.true&or=(child_id.is.null,child_id.eq.${childId})&select=*&order=sort_order.asc`);
+  if (tasksResult.error && String(tasksResult.error.message || "").includes("child_id")) {
+    tasksResult = await api.select("summer_task_templates", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`);
+    state.error = "数据库还没有一杉专属暑期任务字段，请先运行 supabase/add-yishan-summer-checkins.sql。";
+  }
+
+  const [checkinsResult, projectsResult] = await Promise.all([
     childId
       ? api.select("summer_task_checkins", `family_id=eq.${familyId}&child_id=eq.${childId}&checkin_date=eq.${date}&select=*`)
       : Promise.resolve({ data: [], error: null }),
@@ -1686,14 +1703,22 @@ function getSelectedChild() {
 }
 
 function summerTasks() {
-  return (state.summerTasks.length ? state.summerTasks : summerDefaultTasks).map((task, index) => ({
+  const selectedChild = state.children.find((child) => child.id === state.summer.childId);
+  const childTasks = state.summerTasks.filter((task) => task.child_id === state.summer.childId);
+  const familyTasks = state.summerTasks.filter((task) => !task.child_id);
+  let sourceTasks = childTasks.length ? childTasks : familyTasks;
+  if (!sourceTasks.length) {
+    sourceTasks = selectedChild?.name === "一杉" ? yishanSummerTasks : summerDefaultTasks;
+  }
+  return sourceTasks.map((task, index) => ({
     id: task.id || task.task_key,
     task_key: task.task_key,
     name: task.name,
     task_group: task.task_group || "基础任务",
     category: task.category || "学习",
-    reward_stars: Number(task.reward_stars || 1),
+    reward_stars: Number(task.reward_stars || 2),
     metric_type: task.metric_type || "",
+    child_id: task.child_id || null,
     sort_order: Number(task.sort_order || index + 1)
   })).sort((a, b) => a.sort_order - b.sort_order);
 }
@@ -1738,6 +1763,36 @@ function summerMetricFields(task) {
     ],
     screen_control: [
       { key: "screen_minutes", label: "电子产品", unit: "分钟" }
+    ],
+    yishan_self_meal: [
+      { key: "count", label: "完成次数", unit: "次" }
+    ],
+    yishan_self_play: [
+      { key: "minutes", label: "自主玩耍", unit: "分钟" }
+    ],
+    yishan_self_dress: [
+      { key: "count", label: "完成次数", unit: "次" }
+    ],
+    yishan_sofa_tidy: [
+      { key: "done", label: "达成", unit: "次" }
+    ],
+    yishan_quiet_for_brother: [
+      { key: "done", label: "达成", unit: "次" }
+    ],
+    yishan_screen_control: [
+      { key: "screen_minutes", label: "电子产品", unit: "分钟" }
+    ],
+    yishan_outdoor_sports: [
+      { key: "minutes", label: "户外运动", unit: "分钟" }
+    ],
+    yishan_character_learning: [
+      { key: "character_count", label: "识字", unit: "个" }
+    ],
+    yishan_poem_recitation: [
+      { key: "poem_count", label: "诗词", unit: "首" }
+    ],
+    yishan_english_lesson: [
+      { key: "lesson_count", label: "英语", unit: "课" }
     ]
   };
 
