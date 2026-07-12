@@ -1,137 +1,75 @@
-alter table public.child_badges
-  add column if not exists bonus_stars int not null default 0,
-  add column if not exists bonus_star_record_id uuid references public.star_records(id) on delete set null;
-
 alter table public.badges
   add column if not exists bonus_stars int not null default 0 check (bonus_stars >= 0),
   add column if not exists bonus_note text;
 
-create or replace function public.summer_metric_total(
-  p_family_id uuid,
-  p_child_id uuid,
-  p_metric_key text
-)
-returns numeric
-language sql
-stable
-set search_path = public
-as $$
-  select coalesce(sum(
-    case p_metric_key
-      when 'oral_math' then coalesce((c.metric_data ->> 'oral_math_count')::numeric, 0)
-      when 'word_problems' then coalesce((c.metric_data ->> 'word_problem_count')::numeric, 0)
-      when 'jump_rope' then coalesce((c.metric_data ->> 'jump_rope_count')::numeric, 0)
-      when 'sit_ups' then coalesce((c.metric_data ->> 'sit_up_count')::numeric, 0)
-      else coalesce((c.metric_data ->> p_metric_key)::numeric, 0)
-    end
-  ), 0)
-  from public.summer_task_checkins c
-  where c.family_id = p_family_id
-    and c.child_id = p_child_id
-    and c.completed = true;
-$$;
+alter table public.star_records
+  drop constraint if exists star_records_stars_check;
 
-create or replace function public.summer_task_completed_count(
-  p_family_id uuid,
-  p_child_id uuid,
-  p_task_key text
-)
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  select count(*)::int
-  from public.summer_task_checkins c
-  join public.summer_task_templates t on t.id = c.task_template_id
-  where c.family_id = p_family_id
-    and c.child_id = p_child_id
-    and c.completed = true
-    and t.task_key = p_task_key;
-$$;
+alter table public.star_records
+  add constraint star_records_stars_check check (stars > 0 and stars <= 999);
 
-create or replace function public.summer_task_max_streak(
-  p_family_id uuid,
-  p_child_id uuid,
-  p_task_key text
+with family as (
+  select id
+  from public.families
+  where invite_code = 'PIPI-MANMAN'
+),
+badge_seed as (
+  select 'currency-moon' as badge_group, '明亮之星' as name, '累计获得 30 个月亮。达成后系统自动奖励 5 颗星。' as description, 'badge-currency-moon' as icon_key, 1 as level, 'lifetime_currency_count' as rule_type, 30 as rule_value, null::text as category, '{"currency":"moon","count":30}'::jsonb as rule_config, 5 as bonus_stars, 131 as sort_order
+  union all select 'currency-sun', '烈日之星', '累计获得 30 个太阳。达成后系统自动奖励 10 颗星。', 'badge-currency-sun', 1, 'lifetime_currency_count', 30, null::text, '{"currency":"sun","count":30}'::jsonb, 10, 132
+  union all select 'currency-sun', '夸父逐日', '累计获得 60 个太阳。达成后系统自动奖励 20 颗星。', 'badge-currency-sun', 2, 'lifetime_currency_count', 60, null::text, '{"currency":"sun","count":60}'::jsonb, 20, 133
+  union all select 'currency-sun', '逐日火神', '累计获得 100 个太阳。达成后系统自动奖励 35 颗星。', 'badge-currency-sun', 3, 'lifetime_currency_count', 100, null::text, '{"currency":"sun","count":100}'::jsonb, 35, 134
+  union all select 'currency-bronze', '满天铜板', '累计获得 100 个铜币。达成后系统自动奖励 60 颗星。', 'badge-currency-bronze', 1, 'lifetime_currency_count', 100, null::text, '{"currency":"bronze","count":100}'::jsonb, 60, 135
+  union all select 'currency-bronze', '铜板富翁', '累计获得 120 个铜币。达成后系统自动奖励 100 颗星。', 'badge-currency-bronze', 2, 'lifetime_currency_count', 120, null::text, '{"currency":"bronze","count":120}'::jsonb, 100, 136
+  union all select 'currency-silver', '碎银漫天', '累计获得 140 个银币。达成后系统自动奖励 200 颗星。', 'badge-currency-silver', 1, 'lifetime_currency_count', 140, null::text, '{"currency":"silver","count":140}'::jsonb, 200, 137
+  union all select 'currency-silver', '碎银富翁', '累计获得 160 个银币。达成后系统自动奖励 230 颗星。', 'badge-currency-silver', 2, 'lifetime_currency_count', 160, null::text, '{"currency":"silver","count":160}'::jsonb, 230, 138
+  union all select 'currency-gold', '金碧辉煌', '累计获得 180 个金币。达成后系统自动奖励 400 颗星。', 'badge-currency-gold', 1, 'lifetime_currency_count', 180, null::text, '{"currency":"gold","count":180}'::jsonb, 400, 139
+  union all select 'currency-gold', '金钱皇后', '累计获得 200 个金币。达成后系统自动奖励 430 颗星。', 'badge-currency-gold', 2, 'lifetime_currency_count', 200, null::text, '{"currency":"gold","count":200}'::jsonb, 430, 140
+  union all select 'currency-diamond', '钻石大王', '累计获得 220 个钻石。达成后系统自动奖励 500 颗星。', 'badge-currency-diamond', 1, 'lifetime_currency_count', 220, null::text, '{"currency":"diamond","count":220}'::jsonb, 500, 141
 )
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  with dates as (
-    select distinct c.checkin_date
-    from public.summer_task_checkins c
-    join public.summer_task_templates t on t.id = c.task_template_id
-    where c.family_id = p_family_id
-      and c.child_id = p_child_id
-      and c.completed = true
-      and t.task_key = p_task_key
-  ),
-  numbered as (
-    select
-      checkin_date,
-      checkin_date - (row_number() over (order by checkin_date))::int as streak_group
-    from dates
-  )
-  select coalesce(max(streak_count), 0)::int
-  from (
-    select count(*) as streak_count
-    from numbered
-    group by streak_group
-  ) streaks;
-$$;
-
-create or replace function public.summer_quality_days(
-  p_family_id uuid,
-  p_child_id uuid
+insert into public.badges (
+  family_id,
+  name,
+  description,
+  icon_key,
+  rule_type,
+  rule_value,
+  category,
+  badge_group,
+  level,
+  rule_config,
+  bonus_stars,
+  bonus_note,
+  sort_order
 )
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  select count(*)::int
-  from public.summer_task_checkins c
-  where c.family_id = p_family_id
-    and c.child_id = p_child_id
-    and c.completed = true
-    and coalesce(c.note, '') ~ '(质量好|认真|主动|优秀|高质量)';
-$$;
-
-create or replace function public.completed_summer_weeks(
-  p_family_id uuid,
-  p_child_id uuid
-)
-returns int
-language sql
-stable
-set search_path = public
-as $$
-  with base_tasks as (
-    select id
-    from public.summer_task_templates
-    where family_id = p_family_id
-      and is_active = true
-      and task_group = '基础任务'
-      and (child_id is null or child_id = p_child_id)
-  ),
-  completed_by_week as (
-    select
-      date_trunc('week', c.checkin_date)::date as week_start,
-      count(distinct c.task_template_id)::int as completed_count
-    from public.summer_task_checkins c
-    where c.family_id = p_family_id
-      and c.child_id = p_child_id
-      and c.completed = true
-      and c.task_template_id in (select id from base_tasks)
-    group by date_trunc('week', c.checkin_date)::date
-  )
-  select count(*)::int
-  from completed_by_week
-  where completed_count >= (select count(*) from base_tasks);
-$$;
+select
+  family.id,
+  badge_seed.name,
+  badge_seed.description,
+  badge_seed.icon_key,
+  badge_seed.rule_type,
+  badge_seed.rule_value,
+  badge_seed.category,
+  badge_seed.badge_group,
+  badge_seed.level,
+  badge_seed.rule_config,
+  badge_seed.bonus_stars,
+  concat('达成「', badge_seed.name, '」自动奖励 ', badge_seed.bonus_stars, ' 颗星'),
+  badge_seed.sort_order
+from family
+cross join badge_seed
+on conflict (family_id, name) do update set
+  description = excluded.description,
+  icon_key = excluded.icon_key,
+  rule_type = excluded.rule_type,
+  rule_value = excluded.rule_value,
+  category = excluded.category,
+  badge_group = excluded.badge_group,
+  level = excluded.level,
+  rule_config = excluded.rule_config,
+  bonus_stars = excluded.bonus_stars,
+  bonus_note = excluded.bonus_note,
+  sort_order = excluded.sort_order,
+  is_active = true;
 
 create or replace function public.award_badges_for_child(
   p_family_id uuid,
@@ -346,42 +284,21 @@ create trigger award_badge_bonus_stars
 after insert on public.child_badges
 for each row execute function public.award_badge_bonus_stars();
 
-create or replace function public.refresh_child_badges_from_star_record()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if new.type = 'praise' then
-    perform public.award_badges_for_child(new.family_id, new.child_id);
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists refresh_child_badges_from_star_record on public.star_records;
-create trigger refresh_child_badges_from_star_record
-after insert or update of category on public.star_records
-for each row execute function public.refresh_child_badges_from_star_record();
-
-create or replace function public.refresh_child_badges_from_summer_checkin()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if new.completed = true then
-    perform public.award_badges_for_child(new.family_id, new.child_id);
-  end if;
-  return new;
-end;
-$$;
-
-drop trigger if exists refresh_child_badges_from_summer_checkin on public.summer_task_checkins;
-create trigger refresh_child_badges_from_summer_checkin
-after insert or update of completed, metric_data, metric_value on public.summer_task_checkins
-for each row execute function public.refresh_child_badges_from_summer_checkin();
-
 grant execute on function public.award_badges_for_child(uuid, uuid) to authenticated;
+
+with family as (
+  select id
+  from public.families
+  where invite_code = 'PIPI-MANMAN'
+)
+select public.award_badges_for_child(family.id, children.id) as inserted_badges
+from family
+join public.children on children.family_id = family.id;
+
+with family as (
+  select id
+  from public.families
+  where invite_code = 'PIPI-MANMAN'
+)
+select
+  (select count(*) from public.badges b join family f on f.id = b.family_id where b.rule_type = 'lifetime_currency_count') as currency_badges_count;

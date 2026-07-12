@@ -936,7 +936,7 @@ function renderBadgeGroup(group, isBadgeEarned, badgeProgressMap) {
   const headlineBadge = highestEarned || nextBadge || group.badges[0];
   const groupEarned = earnedBadges.length > 0;
   const isMultiLevel = group.badges.length > 1;
-  const bonusText = isMultiLevel ? "Lv1 +1 星，Lv2 +3 星，Lv3 +6 星" : "达成后点亮";
+  const bonusText = badgeBonusSummary(group.badges, isMultiLevel);
   const earnedText = highestEarned
     ? (isMultiLevel ? `已获得 Lv${escapeHtml(highestEarned.level || 1)}` : "已获得")
     : "还未获得";
@@ -974,6 +974,25 @@ function renderBadgeGroup(group, isBadgeEarned, badgeProgressMap) {
       </div>
     </details>
   `;
+}
+
+function badgeBonusSummary(badges, isMultiLevel) {
+  const configuredBonuses = badges
+    .map((badge) => Number(badge.bonus_stars || 0))
+    .filter((stars) => stars > 0);
+  if (configuredBonuses.length) {
+    if (isMultiLevel) {
+      return badges
+        .map((badge) => {
+          const stars = Number(badge.bonus_stars || 0);
+          return stars > 0 ? `Lv${badge.level || 1} +${stars} 星` : "";
+        })
+        .filter(Boolean)
+        .join("，");
+    }
+    return `达成 +${configuredBonuses[0]} 星`;
+  }
+  return isMultiLevel ? "Lv1 +1 星，Lv2 +3 星，Lv3 +6 星" : "达成后点亮";
 }
 
 function renderCompactProgress(progress) {
@@ -2167,6 +2186,15 @@ function badgeProgress(badge, child) {
     return progressResult([{ label: "累计成长星", current, target, unit: "星" }]);
   }
 
+  if (badge.rule_type === "lifetime_currency_count") {
+    const config = parseRuleConfig(badge.rule_config);
+    const unit = currencyRuleUnit(config.currency);
+    const stars = Math.max(Number(child.lifetime_stars || 0), Number(child.available_stars || 0));
+    const current = unit.value ? Math.floor(stars / unit.value) : 0;
+    const target = Number(config.count || badge.rule_value || 0);
+    return progressResult([{ label: `累计${unit.label}`, current, target, unit: unit.label }]);
+  }
+
   if (badge.rule_type === "category_positive_stars") {
     const current = sumStarRecords(child.id, {
       type: "praise",
@@ -2370,6 +2398,18 @@ function metricRuleUnit(ruleKey) {
     ski_meter: "米"
   };
   return units[ruleKey] || "";
+}
+
+function currencyRuleUnit(currency) {
+  const units = {
+    moon: { label: "月亮", value: 5 },
+    sun: { label: "太阳", value: 15 },
+    bronze: { label: "铜币", value: 30 },
+    silver: { label: "银币", value: 60 },
+    gold: { label: "金币", value: 120 },
+    diamond: { label: "钻石", value: 240 }
+  };
+  return units[currency] || { label: "单位", value: 1 };
 }
 
 function qualitySummerDays(childId) {
