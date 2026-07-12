@@ -63,6 +63,8 @@ let state = {
   trades: [],
   summerTasks: [],
   summerCheckins: [],
+  allSummerTasks: [],
+  allSummerCheckins: [],
   summerProjects: [],
   loading: false,
   summerLoading: false,
@@ -230,16 +232,20 @@ async function loadAll() {
     childBadgesResult,
     starRecordsResult,
     redemptionsResult,
-    tradesResult
+    tradesResult,
+    allSummerTasksResult,
+    allSummerCheckinsResult
   ] = await Promise.all([
     api.select("children", `family_id=eq.${familyId}&select=*&order=sort_order.asc`),
     api.select("guardians", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
     api.select("rewards", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
     api.select("badges", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
     api.select("child_badges", `family_id=eq.${familyId}&select=*`),
-    api.select("star_records", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=80`),
+    api.select("star_records", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=1000`),
     api.select("reward_redemptions", `family_id=eq.${familyId}&select=*,children(name),guardian:guardians!reward_redemptions_guardian_id_fkey(name)&order=created_at.desc&limit=80`),
-    api.select("star_trades", `family_id=eq.${familyId}&select=*&order=created_at.desc&limit=80`)
+    api.select("star_trades", `family_id=eq.${familyId}&select=*&order=created_at.desc&limit=80`),
+    api.select("summer_task_templates", `family_id=eq.${familyId}&is_active=eq.true&select=*&order=sort_order.asc`),
+    api.select("summer_task_checkins", `family_id=eq.${familyId}&select=*&order=checkin_date.asc&limit=2000`)
   ]);
 
   const error = [
@@ -250,7 +256,9 @@ async function loadAll() {
     childBadgesResult,
     starRecordsResult,
     redemptionsResult,
-    tradesResult
+    tradesResult,
+    allSummerTasksResult,
+    allSummerCheckinsResult
   ].find((result) => result.error)?.error;
 
   state.loading = false;
@@ -269,6 +277,8 @@ async function loadAll() {
   state.starRecords = starRecordsResult.data || [];
   state.redemptions = redemptionsResult.data || [];
   state.trades = tradesResult.data || [];
+  state.allSummerTasks = allSummerTasksResult.data || [];
+  state.allSummerCheckins = allSummerCheckinsResult.data || [];
 
   if (!state.form.childId && state.children[0]) {
     state.form.childId = state.children[0].id;
@@ -865,23 +875,18 @@ function renderBadges() {
       .filter((item) => item.child_id === selectedChild?.id)
       .map((item) => item.badge_id)
   );
+  const badgeProgressMap = new Map(state.badges.map((badge) => [badge.id, badgeProgress(badge, selectedChild)]));
   const isBadgeEarned = (badge) => {
     if (earnedIds.has(badge.id)) return true;
-    if (badge.rule_type === "lifetime_stars") {
-      const growthStars = Math.max(
-        Number(selectedChild?.lifetime_stars || 0),
-        Number(selectedChild?.available_stars || 0)
-      );
-      return growthStars >= Number(badge.rule_value || 0);
-    }
-    return false;
+    return badgeProgressMap.get(badge.id)?.complete || false;
   };
   const earnedCount = state.badges.filter(isBadgeEarned).length;
+  const groupedBadges = groupBadgesForWall(state.badges);
 
   return `
     <section class="section-title">
       <h2>勋章墙</h2>
-      <span>成长荣誉收藏</span>
+      <span>等级勋章可展开查看进度</span>
     </section>
     <div class="panel form-card form-grid">
       <div class="field">
@@ -897,18 +902,106 @@ function renderBadges() {
       <h2>${escapeHtml(selectedChild?.name || "")} 的勋章</h2>
       <span>${earnedCount}/${state.badges.length}</span>
     </section>
-    <div class="badge-grid">
-      ${state.badges.map((badge) => {
-        const earned = isBadgeEarned(badge);
+    <div class="badge-wall">
+      ${groupedBadges.map((group) => renderBadgeGroup(group, isBadgeEarned, badgeProgressMap)).join("") || `<div class="panel empty-state">还没有勋章配置</div>`}
+    </div>
+  `;
+}
+
+function groupBadgesForWall(badges) {
+  const groups = new Map();
+  badges.forEach((badge) => {
+    const key = badge.badge_group || `single-${badge.id}`;
+    const label = badge.badge_group ? badge.name.replace(/\s*Lv\d+\s*$/i, "") : badge.name;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label,
+        iconKey: badge.icon_key,
+        badges: []
+      });
+    }
+    groups.get(key).badges.push(badge);
+  });
+  return Array.from(groups.values()).map((group) => ({
+    ...group,
+    badges: group.badges.sort((a, b) => Number(a.level || 1) - Number(b.level || 1) || Number(a.sort_order || 0) - Number(b.sort_order || 0))
+  }));
+}
+
+function renderBadgeGroup(group, isBadgeEarned, badgeProgressMap) {
+  const earnedBadges = group.badges.filter(isBadgeEarned);
+  const highestEarned = earnedBadges.sort((a, b) => Number(b.level || 1) - Number(a.level || 1))[0];
+  const nextBadge = group.badges.find((badge) => !isBadgeEarned(badge));
+  const headlineBadge = highestEarned || nextBadge || group.badges[0];
+  const groupEarned = earnedBadges.length > 0;
+  const isMultiLevel = group.badges.length > 1;
+  const bonusText = isMultiLevel ? "Lv1 +1 星，Lv2 +3 星，Lv3 +6 星" : "达成后点亮";
+  const earnedText = highestEarned
+    ? (isMultiLevel ? `已获得 Lv${escapeHtml(highestEarned.level || 1)}` : "已获得")
+    : "还未获得";
+  const summaryProgress = nextBadge ? badgeProgressMap.get(nextBadge.id) : badgeProgressMap.get(headlineBadge.id);
+
+  return `
+    <details class="badge-group-card ${groupEarned ? "" : "locked"}" ${isMultiLevel ? "" : "open"}>
+      <summary class="badge-group-summary">
+        <span class="badge-icon">${groupEarned ? "★" : "?"}</span>
+        <span class="badge-group-main">
+          <strong>${escapeHtml(group.label)}</strong>
+          <small>${earnedText} · ${escapeHtml(bonusText)}</small>
+          ${summaryProgress ? renderCompactProgress(summaryProgress) : ""}
+        </span>
+        <span class="badge-group-toggle">${isMultiLevel ? "展开等级" : "查看条件"}</span>
+      </summary>
+      <div class="badge-level-list">
+        ${group.badges.map((badge) => {
+          const earned = isBadgeEarned(badge);
+          const progress = badgeProgressMap.get(badge.id);
+          return `
+            <article class="badge-level-item ${earned ? "" : "locked"}">
+              <div class="badge-level-head">
+                <div>
+                  <strong>${escapeHtml(badge.name)}</strong>
+                  ${isMultiLevel && badge.level ? `<span class="level-pill">Lv${escapeHtml(badge.level)}</span>` : ""}
+                </div>
+                <span class="badge-status">${earned ? "已点亮" : "努力中"}</span>
+              </div>
+              <div class="meta">${escapeHtml(badge.description)}</div>
+              ${progress ? renderBadgeProgress(progress) : ""}
+            </article>
+          `;
+        }).join("")}
+      </div>
+    </details>
+  `;
+}
+
+function renderCompactProgress(progress) {
+  const main = progress.rows[0];
+  if (!main) return "";
+  const percent = progressPercent(main.current, main.target);
+  return `
+    <span class="badge-compact-progress">
+      <span style="width:${percent}%"></span>
+    </span>
+  `;
+}
+
+function renderBadgeProgress(progress) {
+  return `
+    <div class="badge-progress-list">
+      ${progress.rows.map((row) => {
+        const percent = progressPercent(row.current, row.target);
         return `
-        <article class="badge-item ${earned ? "" : "locked"}">
-          <div class="badge-icon">${earned ? "★" : "?"}</div>
-          <strong>${escapeHtml(badge.name)}</strong>
-          ${badge.badge_group ? `<span class="level-pill">Lv${escapeHtml(badge.level || 1)}</span>` : ""}
-          <div class="meta">${escapeHtml(badge.description)}</div>
-        </article>
-      `;
-      }).join("") || `<div class="panel empty-state">还没有勋章配置</div>`}
+          <div class="badge-progress-row">
+            <div class="badge-progress-label">
+              <span>${escapeHtml(row.label)}</span>
+              <strong>${formatProgressValue(row.current)}/${formatProgressValue(row.target)}${escapeHtml(row.unit || "")}</strong>
+            </div>
+            <div class="badge-progress-bar"><span style="width:${percent}%"></span></div>
+          </div>
+        `;
+      }).join("")}
     </div>
   `;
 }
@@ -1265,7 +1358,8 @@ async function submitSummerCheckin(event) {
     awarded_stars: awardStars,
     note
   });
-  if (!oldCheckin?.completed) {
+  const refreshed = await refreshAwardState();
+  if (!refreshed && !oldCheckin?.completed) {
     adjustSelectedChildStars(awardStars);
   }
   updateSummerTaskDom(taskId);
@@ -1307,10 +1401,35 @@ async function invalidateSummerCheckin(event) {
     completed: false,
     awarded_stars: stars
   });
-  adjustSelectedChildStars(-stars);
+  const refreshed = await refreshAwardState();
+  if (!refreshed) {
+    adjustSelectedChildStars(-stars);
+  }
   updateSummerTaskDom(taskId);
   updateSummerSummaryDom();
   toast(`已回退 ${stars} 颗星星`);
+}
+
+async function refreshAwardState() {
+  if (!state.family?.family_id) return false;
+  const familyId = state.family.family_id;
+  const [childrenResult, childBadgesResult, starRecordsResult, allSummerCheckinsResult] = await Promise.all([
+    api.select("children", `family_id=eq.${familyId}&select=*&order=sort_order.asc`),
+    api.select("child_badges", `family_id=eq.${familyId}&select=*`),
+    api.select("star_records", `family_id=eq.${familyId}&select=*,children(name),guardians(name)&order=created_at.desc&limit=1000`),
+    api.select("summer_task_checkins", `family_id=eq.${familyId}&select=*&order=checkin_date.asc&limit=2000`)
+  ]);
+  const error = [childrenResult, childBadgesResult, starRecordsResult, allSummerCheckinsResult].find((result) => result.error)?.error;
+  if (error) return false;
+  state.children = childrenResult.data || [];
+  state.childBadges = childBadgesResult.data || [];
+  state.starRecords = starRecordsResult.data || [];
+  state.allSummerCheckins = allSummerCheckinsResult.data || [];
+  state.summerCheckins = state.allSummerCheckins.filter((item) => (
+    item.child_id === state.summer.childId
+    && item.checkin_date === state.summer.date
+  ));
+  return true;
 }
 
 async function submitSummerProjectProgress(event) {
@@ -1938,6 +2057,16 @@ function upsertSummerCheckin(checkin) {
   } else {
     state.summerCheckins.unshift(checkin);
   }
+  const allIndex = state.allSummerCheckins.findIndex((item) => item.id === checkin.id || (
+    item.child_id === checkin.child_id
+    && item.task_template_id === checkin.task_template_id
+    && item.checkin_date === checkin.checkin_date
+  ));
+  if (allIndex >= 0) {
+    state.allSummerCheckins[allIndex] = { ...state.allSummerCheckins[allIndex], ...checkin };
+  } else {
+    state.allSummerCheckins.push(checkin);
+  }
 }
 
 function updateSummerTaskDom(taskId) {
@@ -2028,6 +2157,251 @@ function convertStarsToCoins(stars) {
     diamonds: units.find((unit) => unit.key === "diamonds")?.count || 0,
     units
   };
+}
+
+function badgeProgress(badge, child) {
+  if (!child) return { complete: false, rows: [] };
+  if (badge.rule_type === "lifetime_stars") {
+    const current = Math.max(Number(child.lifetime_stars || 0), Number(child.available_stars || 0));
+    const target = Number(badge.rule_value || 0);
+    return progressResult([{ label: "累计成长星", current, target, unit: "星" }]);
+  }
+
+  if (badge.rule_type === "category_positive_stars") {
+    const current = sumStarRecords(child.id, {
+      type: "praise",
+      category: badge.category
+    });
+    const target = Number(badge.rule_value || 0);
+    return progressResult([{ label: `${badge.category || "行为"}累计加星`, current, target, unit: "星" }]);
+  }
+
+  if (badge.rule_type === "category_positive_count") {
+    const current = countStarRecords(child.id, {
+      type: "praise",
+      category: badge.category
+    });
+    const target = Number(badge.rule_value || 0);
+    return progressResult([{ label: `${badge.category || "行为"}正向次数`, current, target, unit: "次" }]);
+  }
+
+  if (badge.rule_type === "summer_task_count") {
+    const config = parseRuleConfig(badge.rule_config);
+    const taskKey = config.task_key;
+    const rows = [];
+    if (config.count || badge.rule_value) {
+      rows.push({
+        label: "累计完成",
+        current: completedSummerCount(child.id, taskKey),
+        target: Number(config.count || badge.rule_value || 0),
+        unit: "天"
+      });
+    }
+    if (config.streak) {
+      rows.push({
+        label: "连续完成",
+        current: maxSummerStreak(child.id, taskKey),
+        target: Number(config.streak || 0),
+        unit: "天"
+      });
+    }
+    return progressResult(rows, "any");
+  }
+
+  if (badge.rule_type === "summer_metric_combo") {
+    const config = parseRuleConfig(badge.rule_config);
+    const rows = Object.entries(config).map(([key, target]) => ({
+      label: metricRuleLabel(key),
+      current: summerMetricTotal(child.id, key),
+      target: Number(target || 0),
+      unit: metricRuleUnit(key)
+    }));
+    return progressResult(rows, "all");
+  }
+
+  if (badge.rule_type === "summer_quality_days") {
+    const target = Number(parseRuleConfig(badge.rule_config).count || badge.rule_value || 0);
+    return progressResult([{
+      label: "高质量完成",
+      current: qualitySummerDays(child.id),
+      target,
+      unit: "天"
+    }]);
+  }
+
+  if (badge.rule_type === "summer_week_completion") {
+    const target = Number(parseRuleConfig(badge.rule_config).weeks || badge.rule_value || 0);
+    return progressResult([{
+      label: "基础任务整周完成",
+      current: completedSummerWeeks(child.id),
+      target,
+      unit: "周"
+    }]);
+  }
+
+  return { complete: false, rows: [] };
+}
+
+function progressResult(rows, mode = "all") {
+  const validRows = rows.filter((row) => Number(row.target || 0) > 0);
+  const complete = validRows.length > 0 && (
+    mode === "any"
+      ? validRows.some((row) => Number(row.current || 0) >= Number(row.target || 0))
+      : validRows.every((row) => Number(row.current || 0) >= Number(row.target || 0))
+  );
+  return { complete, rows: validRows };
+}
+
+function progressPercent(current, target) {
+  if (!target) return 0;
+  return Math.max(0, Math.min(100, Math.round((Number(current || 0) / Number(target || 1)) * 100)));
+}
+
+function formatProgressValue(value) {
+  const number = Number(value || 0);
+  return Number.isInteger(number) ? String(number) : number.toFixed(1).replace(/\.0$/, "");
+}
+
+function parseRuleConfig(config) {
+  if (!config) return {};
+  if (typeof config === "object") return config;
+  try {
+    return JSON.parse(config);
+  } catch {
+    return {};
+  }
+}
+
+function sumStarRecords(childId, filters = {}) {
+  return state.starRecords
+    .filter((record) => record.child_id === childId)
+    .filter((record) => !filters.type || record.type === filters.type)
+    .filter((record) => !filters.category || record.category === filters.category)
+    .reduce((sum, record) => sum + Number(record.stars || 0), 0);
+}
+
+function countStarRecords(childId, filters = {}) {
+  return state.starRecords
+    .filter((record) => record.child_id === childId)
+    .filter((record) => !filters.type || record.type === filters.type)
+    .filter((record) => !filters.category || record.category === filters.category)
+    .length;
+}
+
+function summerTaskById(taskId) {
+  return state.allSummerTasks.find((task) => task.id === taskId)
+    || state.summerTasks.find((task) => task.id === taskId);
+}
+
+function completedSummerCheckins(childId, taskKey) {
+  return state.allSummerCheckins.filter((checkin) => {
+    if (checkin.child_id !== childId || !checkin.completed) return false;
+    if (!taskKey) return true;
+    return summerTaskById(checkin.task_template_id)?.task_key === taskKey;
+  });
+}
+
+function completedSummerCount(childId, taskKey) {
+  return completedSummerCheckins(childId, taskKey).length;
+}
+
+function maxSummerStreak(childId, taskKey) {
+  const dates = Array.from(new Set(
+    completedSummerCheckins(childId, taskKey)
+      .map((checkin) => checkin.checkin_date)
+      .filter(Boolean)
+  )).sort();
+  let best = 0;
+  let current = 0;
+  let lastTime = null;
+  dates.forEach((date) => {
+    const time = new Date(`${date}T00:00:00`).getTime();
+    current = lastTime && time - lastTime === 86400000 ? current + 1 : 1;
+    best = Math.max(best, current);
+    lastTime = time;
+  });
+  return best;
+}
+
+function summerMetricTotal(childId, ruleKey) {
+  const metricKeys = metricRuleKeys(ruleKey);
+  return completedSummerCheckins(childId)
+    .reduce((sum, checkin) => {
+      const metricData = checkin.metric_data && typeof checkin.metric_data === "object" ? checkin.metric_data : {};
+      const value = metricKeys.reduce((total, key) => total + Number(metricData[key] || 0), 0);
+      return sum + value;
+    }, 0);
+}
+
+function metricRuleKeys(ruleKey) {
+  const aliases = {
+    oral_math: ["oral_math_count"],
+    word_problems: ["word_problem_count"],
+    jump_rope: ["jump_rope_count"],
+    sit_ups: ["sit_up_count"],
+    hike_km: ["hike_km"],
+    bike_km: ["bike_km"],
+    ski_meter: ["ski_meter"]
+  };
+  return aliases[ruleKey] || [ruleKey];
+}
+
+function metricRuleLabel(ruleKey) {
+  const labels = {
+    oral_math: "口算题",
+    word_problems: "应用题",
+    jump_rope: "跳绳",
+    sit_ups: "仰卧起坐",
+    hike_km: "登山",
+    bike_km: "骑车",
+    ski_meter: "滑雪下滑"
+  };
+  return labels[ruleKey] || ruleKey;
+}
+
+function metricRuleUnit(ruleKey) {
+  const units = {
+    oral_math: "题",
+    word_problems: "题",
+    jump_rope: "个",
+    sit_ups: "个",
+    hike_km: "公里",
+    bike_km: "公里",
+    ski_meter: "米"
+  };
+  return units[ruleKey] || "";
+}
+
+function qualitySummerDays(childId) {
+  return completedSummerCheckins(childId).filter((checkin) => {
+    const note = String(checkin.note || "");
+    return /质量好|认真|主动|优秀|高质量/.test(note);
+  }).length;
+}
+
+function completedSummerWeeks(childId) {
+  const baseTasks = state.allSummerTasks.filter((task) => (
+    task.task_group === "基础任务"
+    && (!task.child_id || task.child_id === childId)
+  ));
+  const baseTaskIds = new Set(baseTasks.map((task) => task.id));
+  if (!baseTaskIds.size) return 0;
+  const completedByWeek = new Map();
+  completedSummerCheckins(childId)
+    .filter((checkin) => baseTaskIds.has(checkin.task_template_id))
+    .forEach((checkin) => {
+      const weekKey = summerWeekKey(checkin.checkin_date);
+      if (!completedByWeek.has(weekKey)) completedByWeek.set(weekKey, new Set());
+      completedByWeek.get(weekKey).add(checkin.task_template_id);
+    });
+  return Array.from(completedByWeek.values()).filter((taskIds) => taskIds.size >= baseTaskIds.size).length;
+}
+
+function summerWeekKey(dateText) {
+  const date = new Date(`${dateText}T00:00:00`);
+  const first = new Date(date.getFullYear(), 0, 1);
+  const dayOffset = Math.floor((date - first) / 86400000);
+  return `${date.getFullYear()}-${Math.floor((dayOffset + first.getDay()) / 7)}`;
 }
 
 function groupBy(items, key) {
