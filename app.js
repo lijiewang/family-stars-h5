@@ -344,7 +344,8 @@ function renderHome() {
 function renderChildCard(child) {
   const todayPraise = sumToday(child.id, "praise");
   const todayImprovement = sumToday(child.id, "improvement");
-  const jarPercent = Math.min(100, Math.round((child.available_stars / 120) * 100));
+  const coinWallet = convertStarsToCoins(child.available_stars);
+  const jarPercent = Math.min(100, Math.round((coinWallet.diamonds / 12) * 100));
   return `
     <article class="panel child-card">
       <div class="child-head">
@@ -361,6 +362,14 @@ function renderChildCard(child) {
           <div class="jar" aria-label="星星罐进度">
             <div class="jar-fill" style="width: ${jarPercent}%"></div>
           </div>
+          <div class="coin-progress">
+            <span>目标 12 钻石币</span>
+            <strong>${coinWallet.diamonds}/12</strong>
+          </div>
+          <div class="coin-wallet" aria-label="星星换算">
+            ${coinWallet.units.map((item) => `<span>${item.icon}${item.count}</span>`).join("")}
+          </div>
+          <div class="coin-rule">5星=1月亮，3月亮=1太阳，之后每 2 个升一级直到钻石币</div>
         </div>
       </div>
       <div class="stats-row">
@@ -648,7 +657,7 @@ function renderSummer() {
 
 function renderSummerTaskGroup(groupName, tasks) {
   return `
-    <section class="section-title summer-group-title">
+    <section class="section-title summer-group-title" data-group-name="${escapeAttr(groupName)}">
       <h2>${escapeHtml(groupName)}</h2>
       <span>${tasks.filter((task) => summerCheckin(task.id)?.completed).length}/${tasks.length}</span>
     </section>
@@ -666,7 +675,7 @@ function renderSummerTaskItem(task) {
   const awardStars = summerAwardStars(task, checkin);
   const metricSummaryText = metricSummary(metricData, summerMetricFields(task));
   return `
-    <article class="panel summer-task-card ${completed ? "is-done" : ""}">
+    <article class="panel summer-task-card ${completed ? "is-done" : ""}" data-task-id="${escapeAttr(task.id)}">
       <div class="summer-task-main">
         <div class="summer-check-cell">
           <button class="summer-check-btn ${completed ? "is-done" : ""}" data-task-id="${escapeAttr(task.id)}" type="button" aria-label="${completed ? "保存完成备注" : "标记完成"}">
@@ -694,6 +703,11 @@ function renderSummerTaskItem(task) {
       <div class="summer-task-note">
         <input class="summer-note-input" data-task-id="${escapeAttr(task.id)}" maxlength="80" placeholder="备注，例如质量好、主动完成" value="${escapeAttr(noteValue)}" />
       </div>
+      ${completed ? `
+        <div class="summer-task-actions">
+          <button class="ghost-btn invalidate-summer-btn" data-checkin-id="${escapeAttr(checkin.id)}" data-task-id="${escapeAttr(task.id)}" data-task-name="${escapeAttr(task.name)}" data-awarded-stars="${escapeAttr(checkin.awarded_stars || awardStars)}" type="button">失效并回退星星</button>
+        </div>
+      ` : ""}
     </article>
   `;
 }
@@ -1180,6 +1194,10 @@ function bindSummerEvents() {
     button.addEventListener("click", submitSummerCheckin);
   });
 
+  document.querySelectorAll(".invalidate-summer-btn").forEach((button) => {
+    button.addEventListener("click", invalidateSummerCheckin);
+  });
+
   document.querySelectorAll(".summer-project-input").forEach((input) => {
     input.addEventListener("input", (event) => {
       state.summer.projectProgress[event.target.dataset.projectId] = event.target.value;
@@ -1216,7 +1234,7 @@ async function submitSummerCheckin(event) {
   }
 
   button.disabled = true;
-  const { error } = await api.rpc("save_summer_task_checkin", {
+  const { data, error } = await api.rpc("save_summer_task_checkin", {
     p_family_id: state.family.family_id,
     p_child_id: state.summer.childId,
     p_guardian_id: state.guardian.guardian_id,
@@ -1235,10 +1253,64 @@ async function submitSummerCheckin(event) {
     return;
   }
 
-  await Promise.all([loadAll(), loadSummerData()]);
-  state.view = "summer";
-  renderApp();
+  const savedCheckin = Array.isArray(data) ? data[0] : data;
+  upsertSummerCheckin(savedCheckin || {
+    family_id: state.family.family_id,
+    child_id: state.summer.childId,
+    task_template_id: taskId,
+    checkin_date: state.summer.date,
+    completed: true,
+    metric_value: primaryMetricValue(metricData),
+    metric_data: normalizeMetricPayload(metricData),
+    awarded_stars: awardStars,
+    note
+  });
+  if (!oldCheckin?.completed) {
+    adjustSelectedChildStars(awardStars);
+  }
+  updateSummerTaskDom(taskId);
+  updateSummerSummaryDom();
   toast(oldCheckin?.completed ? `${task.name} 已更新` : `${task.name} 已完成，星星已记录`);
+}
+
+async function invalidateSummerCheckin(event) {
+  const button = event.currentTarget;
+  const checkinId = button.dataset.checkinId;
+  const taskId = button.dataset.taskId;
+  const taskName = button.dataset.taskName || "这项打卡";
+  const stars = Number(button.dataset.awardedStars || 0);
+  const ok = window.confirm(`确认将「${taskName}」设为失效，并回退 ${stars} 颗星星吗？`);
+  if (!ok) return;
+
+  button.disabled = true;
+  button.textContent = "正在回退...";
+
+  const { data, error } = await api.rpc("invalidate_summer_task_checkin", {
+    p_family_id: state.family.family_id,
+    p_checkin_id: checkinId,
+    p_guardian_id: state.guardian.guardian_id,
+    p_note: "家长手动失效"
+  });
+
+  if (error) {
+    state.error = humanError(error);
+    renderApp();
+    return;
+  }
+
+  const updatedCheckin = Array.isArray(data) ? data[0] : data;
+  upsertSummerCheckin(updatedCheckin || {
+    id: checkinId,
+    child_id: state.summer.childId,
+    task_template_id: taskId,
+    checkin_date: state.summer.date,
+    completed: false,
+    awarded_stars: stars
+  });
+  adjustSelectedChildStars(-stars);
+  updateSummerTaskDom(taskId);
+  updateSummerSummaryDom();
+  toast(`已回退 ${stars} 颗星星`);
 }
 
 async function submitSummerProjectProgress(event) {
@@ -1854,6 +1926,110 @@ function summerCheckin(taskId) {
   return summerCheckinsForDay().find((item) => item.task_template_id === taskId);
 }
 
+function upsertSummerCheckin(checkin) {
+  if (!checkin) return;
+  const index = state.summerCheckins.findIndex((item) => item.id === checkin.id || (
+    item.child_id === checkin.child_id
+    && item.task_template_id === checkin.task_template_id
+    && item.checkin_date === checkin.checkin_date
+  ));
+  if (index >= 0) {
+    state.summerCheckins[index] = { ...state.summerCheckins[index], ...checkin };
+  } else {
+    state.summerCheckins.unshift(checkin);
+  }
+}
+
+function updateSummerTaskDom(taskId) {
+  const task = summerTasks().find((item) => item.id === taskId);
+  const oldCard = document.querySelector(`.summer-task-card[data-task-id="${cssEscape(taskId)}"]`);
+  if (!task || !oldCard) return;
+  oldCard.outerHTML = renderSummerTaskItem(task);
+  bindSummerTaskEvents(taskId);
+}
+
+function bindSummerTaskEvents(taskId) {
+  const card = document.querySelector(`.summer-task-card[data-task-id="${cssEscape(taskId)}"]`);
+  if (!card) return;
+  card.querySelectorAll(".summer-note-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.notes[event.target.dataset.taskId] = event.target.value;
+    });
+  });
+  card.querySelectorAll(".summer-metric-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const currentTaskId = event.target.dataset.taskId;
+      const metricKey = event.target.dataset.metricKey;
+      state.summer.metrics[currentTaskId] = {
+        ...(state.summer.metrics[currentTaskId] || {}),
+        [metricKey]: event.target.value
+      };
+    });
+  });
+  card.querySelectorAll(".summer-award-input").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      state.summer.starAwards[event.target.dataset.taskId] = event.target.value;
+    });
+  });
+  card.querySelector(".summer-check-btn")?.addEventListener("click", submitSummerCheckin);
+  card.querySelector(".invalidate-summer-btn")?.addEventListener("click", invalidateSummerCheckin);
+}
+
+function updateSummerSummaryDom() {
+  const tasks = summerTasks();
+  const completedCount = summerCheckinsForDay().filter((item) => item.completed).length;
+  const completionRate = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+  const selectedChild = state.children.find((child) => child.id === state.summer.childId) || state.children[0];
+  const summary = document.querySelector(".summer-summary");
+  if (summary) {
+    summary.innerHTML = `
+      <div><strong>${completedCount}/${tasks.length}</strong><span>今日完成</span></div>
+      <div><strong>${completionRate}%</strong><span>完成率</span></div>
+      <div><strong>${selectedChild?.available_stars || 0} ⭐</strong><span>当前星星</span></div>
+    `;
+  }
+  document.querySelectorAll(".summer-group-title").forEach((section) => {
+    const groupName = section.dataset.groupName;
+    const groupTasks = tasks.filter((task) => task.task_group === groupName);
+    const span = section.querySelector("span");
+    if (span) {
+      span.textContent = `${groupTasks.filter((task) => summerCheckin(task.id)?.completed).length}/${groupTasks.length}`;
+    }
+  });
+}
+
+function adjustSelectedChildStars(delta) {
+  const child = state.children.find((item) => item.id === state.summer.childId);
+  if (!child || !Number.isFinite(delta) || delta === 0) return;
+  child.available_stars = Math.max(0, Number(child.available_stars || 0) + delta);
+  if (delta > 0) {
+    child.lifetime_stars = Number(child.lifetime_stars || 0) + delta;
+  } else {
+    child.lifetime_stars = Math.max(0, Number(child.lifetime_stars || 0) + delta);
+  }
+}
+
+function convertStarsToCoins(stars) {
+  let remaining = Math.max(0, Number(stars || 0));
+  const units = [
+    { key: "diamonds", icon: "💎", label: "钻石币", value: 240 },
+    { key: "gold", icon: "🥇", label: "黄金币", value: 120 },
+    { key: "silver", icon: "🥈", label: "白银币", value: 60 },
+    { key: "bronze", icon: "🥉", label: "青铜币", value: 30 },
+    { key: "sun", icon: "☀", label: "太阳", value: 15 },
+    { key: "moon", icon: "☾", label: "月亮", value: 5 },
+    { key: "stars", icon: "⭐", label: "星星", value: 1 }
+  ].map((unit) => {
+    const count = Math.floor(remaining / unit.value);
+    remaining -= count * unit.value;
+    return { ...unit, count };
+  });
+  return {
+    diamonds: units.find((unit) => unit.key === "diamonds")?.count || 0,
+    units
+  };
+}
+
 function groupBy(items, key) {
   return items.reduce((groups, item) => {
     const groupName = item[key] || "其他";
@@ -1944,6 +2120,7 @@ function humanError(error) {
 function summerDataError(error) {
   const message = humanError(error);
   if (message.includes("save_summer_task_checkin")) return "数据库还没有新版暑期打卡奖励和数量记录函数，请先运行 supabase/add-summer-checkin-metrics-and-awards.sql。";
+  if (message.includes("invalidate_summer_task_checkin")) return "数据库还没有暑期打卡失效功能，请先运行 supabase/add-summer-checkin-invalidation.sql。";
   if (message.includes("metric_data") || message.includes("awarded_stars")) return "数据库还没有新版暑期打卡数量字段，请先运行 supabase/add-summer-checkin-metrics-and-awards.sql。";
   if (message.includes("summer_task_templates") || message.includes("summer_task_checkins") || message.includes("summer_projects")) {
     return "数据库还没有暑期打卡表，请先运行 supabase/add-summer-vacation-checkins.sql。";

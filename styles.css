@@ -282,6 +282,48 @@ button {
   transition: width 260ms ease;
 }
 
+.coin-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.coin-progress strong {
+  color: #1d4ed8;
+}
+
+.coin-wallet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.coin-wallet span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 24px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.coin-rule {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
 .stats-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -691,6 +733,21 @@ button {
   margin-left: 86px;
 }
 
+.summer-task-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  margin-left: 86px;
+}
+
+.summer-task-actions .ghost-btn {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-color: #fecaca;
+  color: #991b1b;
+  font-size: 12px;
+}
+
 .summer-task-note input,
 .summer-metric-grid input,
 .summer-project-actions input {
@@ -1048,7 +1105,8 @@ button {
 
   .summer-award-row,
   .summer-metric-grid,
-  .summer-task-note {
+  .summer-task-note,
+  .summer-task-actions {
     margin-left: 0;
   }
 

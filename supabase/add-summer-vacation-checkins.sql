@@ -33,6 +33,9 @@ create table if not exists public.summer_task_checkins (
   note text,
   guardian_id uuid not null references public.guardians(id),
   star_record_id uuid references public.star_records(id) on delete set null,
+  invalidated_at timestamptz,
+  invalidated_by uuid references public.guardians(id),
+  invalidated_note text,
   created_by uuid not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -307,6 +310,68 @@ begin
 end;
 $$;
 
+create or replace function public.invalidate_summer_task_checkin(
+  p_family_id uuid,
+  p_checkin_id uuid,
+  p_guardian_id uuid,
+  p_note text default null
+)
+returns public.summer_task_checkins
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target_checkin public.summer_task_checkins%rowtype;
+  updated_checkin public.summer_task_checkins%rowtype;
+begin
+  if not public.is_family_member(p_family_id) then
+    raise exception '没有访问这个家庭空间的权限';
+  end if;
+
+  if not exists (
+    select 1 from public.guardians
+    where id = p_guardian_id and family_id = p_family_id and is_active = true
+  ) then
+    raise exception '操作人不存在或已停用';
+  end if;
+
+  select *
+  into target_checkin
+  from public.summer_task_checkins
+  where id = p_checkin_id
+    and family_id = p_family_id
+  for update;
+
+  if target_checkin.id is null then
+    raise exception '暑期打卡记录不存在';
+  end if;
+
+  if target_checkin.completed = false then
+    raise exception '这条暑期打卡记录已经失效';
+  end if;
+
+  update public.children
+  set
+    available_stars = greatest(available_stars - coalesce(target_checkin.awarded_stars, 0), 0),
+    lifetime_stars = greatest(lifetime_stars - coalesce(target_checkin.awarded_stars, 0), 0)
+  where id = target_checkin.child_id
+    and family_id = p_family_id;
+
+  update public.summer_task_checkins
+  set
+    completed = false,
+    star_record_id = null,
+    invalidated_at = now(),
+    invalidated_by = p_guardian_id,
+    invalidated_note = nullif(trim(coalesce(p_note, '')), '')
+  where id = target_checkin.id
+  returning * into updated_checkin;
+
+  return updated_checkin;
+end;
+$$;
+
 alter table public.summer_task_templates enable row level security;
 alter table public.summer_task_checkins enable row level security;
 alter table public.summer_projects enable row level security;
@@ -338,6 +403,7 @@ grant select on public.summer_projects to authenticated;
 grant select on public.summer_project_updates to authenticated;
 grant execute on function public.save_summer_task_checkin(uuid, uuid, uuid, uuid, date, boolean, int, numeric, jsonb, text) to authenticated;
 grant execute on function public.update_summer_project_progress(uuid, uuid, uuid, numeric, text) to authenticated;
+grant execute on function public.invalidate_summer_task_checkin(uuid, uuid, uuid, text) to authenticated;
 
 with family as (
   select id from public.families where invite_code = 'PIPI-MANMAN'
