@@ -14,18 +14,17 @@ const summerDefaultTasks = [
   { task_key: "morning_reading", name: "晨读", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 1 },
   { task_key: "handwriting", name: "练字", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 2 },
   { task_key: "math_drill", name: "数学口算与应用题", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "题", sort_order: 3 },
-  { task_key: "summer_homework_am", name: "暑假作业上午段", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 4 },
-  { task_key: "summer_homework_pm", name: "暑假作业下午段", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 5 },
-  { task_key: "reading", name: "阅读 1 小时", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "分钟", sort_order: 6 },
-  { task_key: "sports_outdoor", name: "运动户外", task_group: "基础任务", category: "运动", reward_stars: 3, metric_type: "分钟", sort_order: 7 },
+  { task_key: "summer_homework_daily", name: "暑假作业每日练习", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "页", sort_order: 4 },
+  { task_key: "reading", name: "阅读 1 小时", task_group: "基础任务", category: "学习", reward_stars: 3, metric_type: "分钟", sort_order: 5 },
+  { task_key: "sports_outdoor", name: "运动户外专项", task_group: "基础任务", category: "运动", reward_stars: 4, metric_type: "组合", sort_order: 6 },
   { task_key: "english_checkin", name: "英语打卡", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 8 },
   { task_key: "housework", name: "家务劳动", task_group: "基础任务", category: "自理能力", reward_stars: 2, metric_type: "次", sort_order: 9 },
   { task_key: "night_review", name: "睡前复盘", task_group: "基础任务", category: "学习", reward_stars: 2, metric_type: "篇", sort_order: 10 },
   { task_key: "screen_control", name: "电子产品不超过 30 分钟", task_group: "基础任务", category: "自理能力", reward_stars: 2, metric_type: "达成", sort_order: 11 },
   { task_key: "space_reading", name: "航天主题阅读", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "分钟", sort_order: 12 },
-  { task_key: "space_project", name: "航天实践作品", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "步骤", sort_order: 13 },
-  { task_key: "essay_project", name: "暑期主题征文推进", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "步骤", sort_order: 14 },
-  { task_key: "young_pioneer", name: "少先队实践推进", task_group: "暑假专项", category: "礼貌", reward_stars: 2, metric_type: "步骤", sort_order: 15 },
+  { task_key: "essay_writing", name: "写作文", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "步骤", sort_order: 13 },
+  { task_key: "chinese_preview_grade4", name: "四年级上语文预习", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "课", sort_order: 14 },
+  { task_key: "math_preview_grade4", name: "数学预习", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "单元", sort_order: 15 },
   { task_key: "reading_output", name: "读书成果积累", task_group: "暑假专项", category: "学习", reward_stars: 2, metric_type: "条", sort_order: 16 }
 ];
 const summerDefaultProjects = [
@@ -1953,9 +1952,11 @@ function summerMetricFields(task) {
       { key: "minutes", label: "用时", unit: "分钟" }
     ],
     sports_outdoor: [
-      { key: "minutes", label: "运动时间", unit: "分钟" },
+      { key: "minutes", label: "运动总时长", unit: "分钟" },
+      { key: "morning_run_minutes", label: "晨跑", unit: "分钟" },
       { key: "jump_rope_count", label: "跳绳", unit: "个" },
       { key: "sit_up_count", label: "仰卧起坐", unit: "个" },
+      { key: "push_up_count", label: "俯卧撑", unit: "个" },
       { key: "hike_km", label: "登山", unit: "公里" },
       { key: "bike_km", label: "骑车", unit: "公里" },
       { key: "ski_meter", label: "滑雪下滑", unit: "米" }
@@ -2365,8 +2366,10 @@ function metricRuleKeys(ruleKey) {
   const aliases = {
     oral_math: ["oral_math_count"],
     word_problems: ["word_problem_count"],
+    morning_run: ["morning_run_minutes"],
     jump_rope: ["jump_rope_count"],
     sit_ups: ["sit_up_count"],
+    push_ups: ["push_up_count"],
     hike_km: ["hike_km"],
     bike_km: ["bike_km"],
     ski_meter: ["ski_meter"]
@@ -2378,8 +2381,14 @@ function metricRuleLabel(ruleKey) {
   const labels = {
     oral_math: "口算题",
     word_problems: "应用题",
+    morning_run_minutes: "晨跑",
+    morning_run: "晨跑",
+    jump_rope_count: "跳绳",
     jump_rope: "跳绳",
+    sit_up_count: "仰卧起坐",
     sit_ups: "仰卧起坐",
+    push_up_count: "俯卧撑",
+    push_ups: "俯卧撑",
     hike_km: "登山",
     bike_km: "骑车",
     ski_meter: "滑雪下滑"
@@ -2391,8 +2400,14 @@ function metricRuleUnit(ruleKey) {
   const units = {
     oral_math: "题",
     word_problems: "题",
+    morning_run_minutes: "分钟",
+    morning_run: "分钟",
+    jump_rope_count: "个",
     jump_rope: "个",
+    sit_up_count: "个",
     sit_ups: "个",
+    push_up_count: "个",
+    push_ups: "个",
     hike_km: "公里",
     bike_km: "公里",
     ski_meter: "米"

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>一涵暑期每日打卡周计划 V2</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f3f6fb;
+      color: #172033;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    .page {
+      width: 1120px;
+      min-height: 760px;
+      margin: 24px auto;
+      padding: 28px;
+      background: #fff;
+      border: 1px solid #d9e2ef;
+      border-radius: 18px;
+      box-shadow: 0 12px 36px rgba(25, 40, 72, 0.12);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 14px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+    .sub {
+      color: #5c6b82;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .badge {
+      min-width: 230px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      font-weight: 800;
+      line-height: 1.6;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+      border: 1px solid #d9e2ef;
+      border-radius: 14px;
+      table-layout: fixed;
+      background: #fff;
+    }
+    th, td {
+      border-right: 1px solid #d9e2ef;
+      border-bottom: 1px solid #d9e2ef;
+      vertical-align: top;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th {
+      padding: 10px 8px;
+      background: #19335f;
+      color: #fff;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    th.task-head {
+      width: 146px;
+      background: #102447;
+    }
+    td.task {
+      padding: 10px;
+      background: #f8fafc;
+      font-weight: 900;
+      color: #25324a;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    td.plan {
+      min-height: 64px;
+      padding: 8px;
+      font-size: 13px;
+      line-height: 1.42;
+      color: #27364f;
+    }
+    .check {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      margin-right: 5px;
+      border: 2px solid #94a3b8;
+      border-radius: 5px;
+      vertical-align: -4px;
+      background: #fff;
+    }
+    .star {
+      display: inline-block;
+      margin-top: 4px;
+      color: #2563eb;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .note-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .note {
+      min-height: 78px;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #d9e2ef;
+      background: #f8fafc;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .note strong { color: #1d4ed8; }
+    @media print {
+      body { background: #fff; }
+      .page {
+        width: auto;
+        min-height: auto;
+        margin: 0;
+        padding: 10mm;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      th, td.task, td.plan { font-size: 11px; }
+      h1 { font-size: 22px; }
+      .note-grid { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div>
+        <h1>一涵暑期每日打卡周计划 V2</h1>
+        <div class="sub">周期：2026年7月27日 - 2026年8月2日。完成一项就在方框里打勾，质量好可以在软件里多加星。</div>
+      </div>
+      <div class="badge">
+        本周目标<br />
+        暑假作业第1-3周完成<br />
+        语文第4-6课预习<br />
+        数学第4-5单元预习
+      </div>
+    </header>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="task-head">任务</th>
+          <th>周一<br />7/27</th>
+          <th>周二<br />7/28</th>
+          <th>周三<br />7/29</th>
+          <th>周四<br />7/30</th>
+          <th>周五<br />7/31</th>
+          <th>周六<br />8/1</th>
+          <th>周日<br />8/2</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="task">暑假作业每日练习</td>
+          <td class="plan"><span class="check"></span>第1周前半，认真完成每一页。<br /><span class="star">记录页数，≥2星</span></td>
+          <td class="plan"><span class="check"></span>第1周后半，订正错题。</td>
+          <td class="plan"><span class="check"></span>第2周前半，字迹工整。</td>
+          <td class="plan"><span class="check"></span>第2周后半，检查漏题。</td>
+          <td class="plan"><span class="check"></span>第3周第一段。</td>
+          <td class="plan"><span class="check"></span>第3周第二段。</td>
+          <td class="plan"><span class="check"></span>第3周收尾，统一订正。</td>
+        </tr>
+        <tr>
+          <td class="task">写作文<br />《22°C的星光》</td>
+          <td class="plan"><span class="check"></span>阅读第一部分，摘2句喜欢的话。</td>
+          <td class="plan"><span class="check"></span>阅读第二部分，记录人物和情节。</td>
+          <td class="plan"><span class="check"></span>把书看完，整理3个素材。</td>
+          <td class="plan"><span class="check"></span>列作文提纲：题目、开头、三段内容。</td>
+          <td class="plan"><span class="check"></span>完成初稿，不少于约定字数。</td>
+          <td class="plan"><span class="check"></span>修改初稿，补细节和好词句。</td>
+          <td class="plan"><span class="check"></span>定稿或誊写，检查标点。</td>
+        </tr>
+        <tr>
+          <td class="task">四年级上语文预习</td>
+          <td class="plan"><span class="check"></span>第4课：读课文，圈生字。</td>
+          <td class="plan"><span class="check"></span>第4课：词语解释和朗读。</td>
+          <td class="plan"><span class="check"></span>第5课：读课文，标自然段。</td>
+          <td class="plan"><span class="check"></span>第5课：生字词和主要内容。</td>
+          <td class="plan"><span class="check"></span>第6课：读课文，圈关键词。</td>
+          <td class="plan"><span class="check"></span>第6课：生字词和朗读。</td>
+          <td class="plan"><span class="check"></span>第4-6课复盘，整理不会的词。</td>
+        </tr>
+        <tr>
+          <td class="task">数学预习</td>
+          <td class="plan"><span class="check"></span>第4单元：看例题，写关键步骤。</td>
+          <td class="plan"><span class="check"></span>第4单元：做基础练习。</td>
+          <td class="plan"><span class="check"></span>第4单元：整理错题和不懂点。</td>
+          <td class="plan"><span class="check"></span>第5单元：看例题，写关键步骤。</td>
+          <td class="plan"><span class="check"></span>第5单元：做基础练习。</td>
+          <td class="plan"><span class="check"></span>第5单元：整理错题和不懂点。</td>
+          <td class="plan"><span class="check"></span>第4-5单元复盘，问爸爸妈妈。</td>
+        </tr>
+        <tr>
+          <td class="task">晨跑</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+          <td class="plan"><span class="check"></span>30分钟</td>
+        </tr>
+        <tr>
+          <td class="task">跳绳</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+          <td class="plan"><span class="check"></span>600个</td>
+        </tr>
+        <tr>
+          <td class="task">仰卧起坐</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+          <td class="plan"><span class="check"></span>100个</td>
+        </tr>
+        <tr>
+          <td class="task">俯卧撑</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+          <td class="plan"><span class="check"></span>15个</td>
+        </tr>
+        <tr>
+          <td class="task">每日基础保底</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+          <td class="plan"><span class="check"></span>晨读、练字、英语、睡前复盘。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="note-grid">
+      <div class="note"><strong>软件记录：</strong>运动户外专项里填写晨跑分钟、跳绳个数、仰卧起坐个数、俯卧撑个数。</div>
+      <div class="note"><strong>奖励建议：</strong>每项完成不少于2星；完成质量特别好，可在2-5星之间调整。</div>
+      <div class="note"><strong>复盘问题：</strong>今天最认真的是哪一项？明天要改进哪一项？</div>
+    </section>
+  </main>
+</body>
+</html>
